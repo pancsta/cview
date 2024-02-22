@@ -1,6 +1,7 @@
 package cview
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/gdamore/tcell/v2"
@@ -28,8 +29,13 @@ type TreeNode struct {
 	// The item's text.
 	text string
 
+	bold      bool
+	underline bool
+
 	// The text color.
 	color tcell.Color
+
+	highlighted bool
 
 	// Whether or not this node can be focused and selected.
 	selectable bool
@@ -76,6 +82,13 @@ func (n *TreeNode) Walk(callback func(node, parent *TreeNode) bool) {
 	defer n.Unlock()
 
 	n.walk(callback)
+}
+
+func (n *TreeNode) GetParent() *TreeNode {
+	n.Lock()
+	defer n.Unlock()
+
+	return n.parent
 }
 
 func (n *TreeNode) walk(callback func(node, parent *TreeNode) bool) {
@@ -241,6 +254,20 @@ func (n *TreeNode) SetText(text string) {
 	n.text = text
 }
 
+func (n *TreeNode) SetBold(bold bool) {
+	n.Lock()
+	defer n.Unlock()
+
+	n.bold = bold
+}
+
+func (n *TreeNode) SetUnderline(underline bool) {
+	n.Lock()
+	defer n.Unlock()
+
+	n.underline = underline
+}
+
 // GetColor returns the node's color.
 func (n *TreeNode) GetColor() tcell.Color {
 	n.RLock()
@@ -255,6 +282,20 @@ func (n *TreeNode) SetColor(color tcell.Color) {
 	defer n.Unlock()
 
 	n.color = color
+}
+
+func (n *TreeNode) GetHighlighted() bool {
+	n.RLock()
+	defer n.RUnlock()
+
+	return n.highlighted
+}
+
+func (n *TreeNode) SetHighlighted(state bool) {
+	n.Lock()
+	defer n.Unlock()
+
+	n.highlighted = state
 }
 
 // SetIndent sets an additional indentation for this node's text. A value of 0
@@ -324,6 +365,8 @@ type TreeView struct {
 
 	// If set to true, the tree structure is drawn using lines.
 	graphics bool
+
+	highlightColor *tcell.Color
 
 	// The text color for selected items.
 	selectedTextColor *tcell.Color
@@ -426,8 +469,8 @@ func (t *TreeView) SetTopLevel(topLevel int) {
 //
 // For example, to display a hierarchical list with bullet points:
 //
-//   treeView.SetGraphics(false).
-//     SetPrefixes([]string{"* ", "- ", "x "})
+//	treeView.SetGraphics(false).
+//	  SetPrefixes([]string{"* ", "- ", "x "})
 func (t *TreeView) SetPrefixes(prefixes []string) {
 	t.Lock()
 	defer t.Unlock()
@@ -455,6 +498,12 @@ func (t *TreeView) SetGraphics(showGraphics bool) {
 	defer t.Unlock()
 
 	t.graphics = showGraphics
+}
+
+func (t *TreeView) SetHighlightColor(color tcell.Color) {
+	t.Lock()
+	defer t.Unlock()
+	t.highlightColor = &color
 }
 
 // SetSelectedTextColor sets the text color of selected items.
@@ -787,8 +836,11 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 
 	// Draw the tree.
 	posY := y
-	lineStyle := tcell.StyleDefault.Background(t.backgroundColor).Foreground(t.graphicsColor)
 	for index, node := range t.nodes {
+		lineStyle := tcell.StyleDefault.Background(t.backgroundColor).Foreground(t.graphicsColor)
+		if node.highlighted {
+			lineStyle = lineStyle.Background(*t.highlightColor)
+		}
 		// Skip invisible parts.
 		if posY >= y+height {
 			break
@@ -796,6 +848,9 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 		if index < t.offsetY {
 			continue
 		}
+
+		// Draw the highlight.
+		PrintStyle(screen, []byte(strings.Repeat(" ", width-1)), 1, posY, width-1, AlignLeft, lineStyle)
 
 		// Draw the graphics.
 		if t.graphics {
@@ -836,15 +891,16 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 
 		// Draw the prefix and the text.
 		if node.textX < width && posY < y+height {
+
 			// Prefix.
 			var prefixWidth int
 			if len(t.prefixes) > 0 {
-				_, prefixWidth = Print(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, width-node.textX, AlignLeft, node.color)
+				_, prefixWidth = PrintStyle(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, width-node.textX, AlignLeft, lineStyle.Foreground(node.color))
 			}
 
 			// Text.
 			if node.textX+prefixWidth < width {
-				style := tcell.StyleDefault.Foreground(node.color)
+				style := tcell.StyleDefault.Foreground(node.color).Bold(node.bold).Underline(node.underline)
 				if node == t.currentNode {
 					backgroundColor := node.color
 					foregroundColor := t.backgroundColor
