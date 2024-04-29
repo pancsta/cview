@@ -233,7 +233,8 @@ func NewList() *List {
 //
 // Calling this function triggers a "changed" event if the selection changes.
 func (l *List) SetCurrentItem(index int) {
-	l.Lock()
+	// TODO deadlock
+	//l.Lock()
 
 	if index < 0 {
 		index = len(l.items) + index
@@ -252,10 +253,10 @@ func (l *List) SetCurrentItem(index int) {
 
 	if index != previousItem && index < len(l.items) && l.changed != nil {
 		item := l.items[index]
-		l.Unlock()
+		//l.Unlock()
 		l.changed(index, item)
 	} else {
-		l.Unlock()
+		//l.Unlock()
 	}
 }
 
