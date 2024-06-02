@@ -177,3 +177,12 @@ func (f *FocusManager) Transform(tr Transformation) {
 	}
 	f.updateFocusIndex(decreasing)
 }
+
+// Reset resets the focus manager.
+func (f *FocusManager) Reset() {
+	f.Lock()
+	defer f.Unlock()
+
+	f.focused = 0
+	f.elements = nil
+}

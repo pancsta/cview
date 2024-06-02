@@ -1,6 +1,7 @@
 package cview
 
 import (
+	"regexp"
 	"strings"
 	"sync"
 
@@ -77,10 +78,13 @@ func NewTreeNode(text string) *TreeNode {
 // this node) with the traversed node and its parent node (nil for this node).
 // The callback returns whether traversal should continue with the traversed
 // node's child nodes (true) or not recurse any deeper (false).
-func (n *TreeNode) Walk(callback func(node, parent *TreeNode) bool) {
+func (n *TreeNode) Walk(callback func(node, parent *TreeNode, depth int) bool) {
 	n.Lock()
 	defer n.Unlock()
 
+	n.walk(callback)
+}
+func (n *TreeNode) WalkUnsafe(callback func(node, parent *TreeNode, depth int) bool) {
 	n.walk(callback)
 }
 
@@ -91,14 +95,23 @@ func (n *TreeNode) GetParent() *TreeNode {
 	return n.parent
 }
 
-func (n *TreeNode) walk(callback func(node, parent *TreeNode) bool) {
+func (n *TreeNode) walk(callback func(node, parent *TreeNode, depth int) bool) {
 	n.parent = nil
 	nodes := []*TreeNode{n}
 	for len(nodes) > 0 {
 		// Pop the top node and process it.
 		node := nodes[len(nodes)-1]
 		nodes = nodes[:len(nodes)-1]
-		if !callback(node, node.parent) {
+
+		// make sure node.level is always set
+		node.level = 0
+		parent := node.parent
+		for parent != nil {
+			node.level++
+			parent = parent.parent
+		}
+
+		if !callback(node, node.parent, node.level) {
 			// Don't add any children.
 			continue
 		}
@@ -135,6 +148,15 @@ func (n *TreeNode) SetChildren(childNodes []*TreeNode) {
 	defer n.Unlock()
 
 	n.children = childNodes
+}
+
+var styleRegex = regexp.MustCompile(`\[([a-zA-Z:-]*)\]`)
+
+// VisibleLength returns the visible length of the node's text, without style tags.
+func (n *TreeNode) VisibleLength() int {
+	text := n.GetText()
+	visible := styleRegex.ReplaceAllString(text, "")
+	return len(visible)
 }
 
 // GetText returns this node's text.
@@ -224,7 +246,7 @@ func (n *TreeNode) Collapse() {
 
 // ExpandAll expands this node and all descendent nodes.
 func (n *TreeNode) ExpandAll() {
-	n.Walk(func(node, parent *TreeNode) bool {
+	n.Walk(func(node, parent *TreeNode, _ int) bool {
 		node.expanded = true
 		return true
 	})
@@ -232,7 +254,7 @@ func (n *TreeNode) ExpandAll() {
 
 // CollapseAll collapses this node and all descendent nodes.
 func (n *TreeNode) CollapseAll() {
-	n.Walk(func(node, parent *TreeNode) bool {
+	n.Walk(func(node, parent *TreeNode, _ int) bool {
 		n.expanded = false
 		return true
 	})
@@ -306,6 +328,13 @@ func (n *TreeNode) SetIndent(indent int) {
 	defer n.Unlock()
 
 	n.indent = indent
+}
+
+func (n *TreeNode) GetIndent() int {
+	n.Lock()
+	defer n.Unlock()
+
+	return n.indent
 }
 
 // TreeView displays tree structures. A tree consists of nodes (TreeNode
@@ -628,7 +657,7 @@ func (t *TreeView) process() {
 	if t.graphics {
 		graphicsOffset = 1
 	}
-	t.root.walk(func(node, parent *TreeNode) bool {
+	t.root.walk(func(node, parent *TreeNode, _ int) bool {
 		// Set node attributes.
 		node.parent = parent
 		if parent == nil {
@@ -862,7 +891,9 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 				}
 
 				// Draw a branch if this ancestor is not a last child.
-				if ancestor.parent.children[len(ancestor.parent.children)-1] != ancestor {
+				idx := len(ancestor.parent.children) - 1
+				// TODO runtime error: index out of range [-1]
+				if idx >= 0 && ancestor.parent.children[idx] != ancestor {
 					if posY-1 >= y && ancestor.textX > ancestor.graphicsX {
 						PrintJoinedSemigraphics(screen, x+ancestor.graphicsX, posY-1, Borders.Vertical, t.graphicsColor)
 					}
@@ -921,6 +952,26 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 
 		// Advance.
 		posY++
+	}
+}
+
+// SelectNode selects the given node.
+func (t *TreeView) SelectNode(node *TreeNode) {
+	if node == nil {
+		return
+	}
+
+	t.Lock()
+	defer t.Unlock()
+
+	if t.selected != nil {
+		t.selected(node)
+	}
+	if node.focused != nil {
+		node.focused()
+	}
+	if node.selected != nil {
+		node.selected()
 	}
 }
 
