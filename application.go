@@ -137,6 +137,8 @@ func (a *Application) HandlePanic() {
 		return
 	}
 
+	a.Lock()
+	defer a.Unlock()
 	a.finalizeScreen()
 
 	panic(p)
@@ -483,6 +485,8 @@ func (a *Application) Run() error {
 
 	// Wait for the screen replacement event loop to finish.
 	wg.Wait()
+	a.Lock()
+	defer a.Unlock()
 	a.screen = nil
 
 	return nil

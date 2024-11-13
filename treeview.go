@@ -67,6 +67,7 @@ func NewTreeNode(text string) *TreeNode {
 	return &TreeNode{
 		text:       text,
 		color:      Styles.PrimaryTextColor,
+		// TODO config
 		indent:     2,
 		expanded:   true,
 		selectable: true,
@@ -150,6 +151,7 @@ func (n *TreeNode) SetChildren(childNodes []*TreeNode) {
 	n.children = childNodes
 }
 
+// TODO support #FFFFFF
 var styleRegex = regexp.MustCompile(`\[([a-zA-Z:-]*)\]`)
 
 // VisibleLength returns the visible length of the node's text, without style tags.
