@@ -1,6 +1,9 @@
 package cview
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 // Focusable provides a method which determines if a primitive has focus.
 // Composed primitives may be focused based on the focused state of their
@@ -121,6 +124,19 @@ func (f *FocusManager) GetFocusIndex() int {
 	defer f.Unlock()
 
 	return f.focused
+}
+
+func (f *FocusManager) SetFocusIndex(idx int) error {
+	// TODO
+	// f.Lock()
+	// defer f.Unlock()
+
+	if idx < 0 || idx >= len(f.elements) {
+		return errors.New("index out of range")
+	}
+
+	f.focused = idx
+	return nil
 }
 
 // GetFocusedPrimitive returns the currently focused primitive.

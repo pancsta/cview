@@ -150,7 +150,7 @@ func (c *TableCell) SetBackgroundColor(color tcell.Color) {
 // SetAttributes sets the cell's text attributes. You can combine different
 // attributes using bitmask operations:
 //
-//   cell.SetAttributes(tcell.AttrUnderline | tcell.AttrBold)
+//	cell.SetAttributes(tcell.AttrUnderline | tcell.AttrBold)
 func (c *TableCell) SetAttributes(attr tcell.AttrMask) {
 	c.Lock()
 	defer c.Unlock()
@@ -226,13 +226,13 @@ func (c *TableCell) GetLastPosition() (x, y, width int) {
 // Columns will use as much horizontal space as they need. You can constrain
 // their size with the MaxWidth parameter of the TableCell type.
 //
-// Fixed Columns
+// # Fixed Columns
 //
 // You can define fixed rows and rolumns via SetFixed(). They will always stay
 // in their place, even when the table is scrolled. Fixed rows are always the
 // top rows. Fixed columns are always the leftmost columns.
 //
-// Selections
+// # Selections
 //
 // You can call SetSelectable() to set columns and/or rows to "selectable". If
 // the flag is set only for columns, entire columns can be selected by the user.
@@ -240,7 +240,7 @@ func (c *TableCell) GetLastPosition() (x, y, width int) {
 // set, individual cells can be selected. The "selected" handler set via
 // SetSelectedFunc() is invoked when the user presses Enter on a selection.
 //
-// Navigation
+// # Navigation
 //
 // If the table extends beyond the available space, it can be navigated with
 // key bindings similar to Vim:
@@ -408,7 +408,7 @@ func (t *Table) SetScrollBarColor(color tcell.Color) {
 //
 // To reset a previous setting to its default, make the following call:
 //
-//   table.SetSelectedStyle(tcell.ColorDefault, tcell.ColorDefault, 0)
+//	table.SetSelectedStyle(tcell.ColorDefault, tcell.ColorDefault, 0)
 func (t *Table) SetSelectedStyle(foregroundColor, backgroundColor tcell.Color, attributes tcell.AttrMask) {
 	t.Lock()
 	defer t.Unlock()
@@ -1241,7 +1241,7 @@ ColumnLoop:
 	for _, bgColor := range backgroundColors {
 		entries := cellsByBackgroundColor[bgColor]
 		for _, cell := range entries {
-			if cell.selected {
+			if cell.selected && t.hasFocus {
 				if t.selectedStyle != tcell.StyleDefault {
 					defer colorBackground(cell.x, cell.y, cell.w, cell.h, selBg, selFg, selAttr, false)
 				} else {
@@ -1332,8 +1332,11 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			left = func() {
 				if t.columnsSelectable {
-					if validSelection(t.selectedRow, t.selectedColumn-1) {
-						t.selectedColumn--
+					for i := t.selectedColumn - 1; i >= 0; i-- {
+						if validSelection(t.selectedRow, i) {
+							t.selectedColumn = i
+							break
+						}
 					}
 				} else {
 					t.columnOffset--
@@ -1342,8 +1345,11 @@ func (t *Table) InputHandler() func(event *tcell.EventKey, setFocus func(p Primi
 
 			right = func() {
 				if t.columnsSelectable {
-					if validSelection(t.selectedRow, t.selectedColumn+1) {
-						t.selectedColumn++
+					for i := t.selectedColumn + 1; i <= t.lastColumn; i++ {
+						if validSelection(t.selectedRow, i) {
+							t.selectedColumn = i
+							break
+						}
 					}
 				} else {
 					t.columnOffset++
@@ -1450,6 +1456,10 @@ func (t *Table) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 				}
 			} else if t.rowsSelectable || t.columnsSelectable {
 				t.Select(t.cellAt(x, y))
+				// mouse always selects
+				if t.selected != nil {
+					t.selected(t.selectedRow, t.selectedColumn)
+				}
 			}
 
 			consumed = true
