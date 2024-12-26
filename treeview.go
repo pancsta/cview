@@ -17,6 +17,8 @@ const (
 	treeDown
 	treePageUp
 	treePageDown
+	treeScrollUp   // Move without changing the selection, even when off screen.
+	treeScrollDown // Move without changing the selection, even when off screen.
 )
 
 // TreeNode represents one node in a tree view.
@@ -65,8 +67,8 @@ type TreeNode struct {
 // NewTreeNode returns a new tree node.
 func NewTreeNode(text string) *TreeNode {
 	return &TreeNode{
-		text:       text,
-		color:      Styles.PrimaryTextColor,
+		text:  text,
+		color: Styles.PrimaryTextColor,
 		// TODO config
 		indent:     2,
 		expanded:   true,
@@ -200,6 +202,18 @@ func (n *TreeNode) SetSelectable(selectable bool) {
 	defer n.Unlock()
 
 	n.selectable = selectable
+}
+
+// RemoveChild removes a child node from this node. If the child node cannot be
+// found, nothing happens.
+func (n *TreeNode) RemoveChild(node *TreeNode) bool {
+	for index, child := range n.children {
+		if child == node {
+			n.children = append(n.children[:index], n.children[index+1:]...)
+			return true
+		}
+	}
+	return false
 }
 
 // SetFocusedFunc sets the function which is called when the user navigates to
@@ -382,6 +396,11 @@ type TreeView struct {
 	// constants defined above.
 	movement int
 
+	// The number of nodes to move down or up, when movement is treeMove,
+	// excluding non-selectable nodes for selection movement, including them for
+	// scrolling.
+	step int
+
 	// The top hierarchical level shown. (0 corresponds to the root level.)
 	topLevel int
 
@@ -425,6 +444,11 @@ type TreeView struct {
 
 	// The visible nodes, top-down, as set by process().
 	nodes []*TreeNode
+
+	// Temporarily set to true while we know that the tree has not changed and
+	// therefore does not need to be reprocessed.
+	// TODO
+	stableNodes bool
 
 	sync.RWMutex
 }
@@ -481,6 +505,35 @@ func (t *TreeView) GetCurrentNode() *TreeNode {
 	defer t.RUnlock()
 
 	return t.currentNode
+}
+
+// GetPath returns all nodes located on the path from the root to the given
+// node, including the root and the node itself. If there is no root node, nil
+// is returned. If there are multiple paths to the node, a random one is chosen
+// and returned.
+func (t *TreeView) GetPath(node *TreeNode) []*TreeNode {
+	if t.root == nil {
+		return nil
+	}
+
+	var f func(current *TreeNode, path []*TreeNode) []*TreeNode
+	f = func(current *TreeNode, path []*TreeNode) []*TreeNode {
+		if current == node {
+			return path
+		}
+
+		for _, child := range current.children {
+			newPath := make([]*TreeNode, len(path), len(path)+1)
+			copy(newPath, path)
+			if p := f(child, append(newPath, child)); p != nil {
+				return p
+			}
+		}
+
+		return nil
+	}
+
+	return f(t.root, []*TreeNode{t.root})
 }
 
 // SetTopLevel sets the first tree level that is visible with 0 referring to the
@@ -779,8 +832,10 @@ func (t *TreeView) process() {
 			newSelectedIndex = selectedIndex
 		}
 		t.currentNode = t.nodes[newSelectedIndex]
+		moved := false
 		if newSelectedIndex != selectedIndex {
 			t.movement = treeNone
+			moved = true
 			if t.changed != nil {
 				t.Unlock()
 				t.changed(t.currentNode)
@@ -795,11 +850,13 @@ func (t *TreeView) process() {
 		selectedIndex = newSelectedIndex
 
 		// Move selection into viewport.
-		if selectedIndex-t.offsetY >= height {
-			t.offsetY = selectedIndex - height + 1
-		}
-		if selectedIndex < t.offsetY {
-			t.offsetY = selectedIndex
+		if t.movement != treeScrollUp && t.movement != treeScrollDown && !moved {
+			if selectedIndex-t.offsetY >= height {
+				t.offsetY = selectedIndex - height + 1
+			}
+			if selectedIndex < t.offsetY {
+				t.offsetY = selectedIndex
+			}
 		}
 	} else {
 		// If selection is not visible or selectable, select the first candidate.
@@ -838,6 +895,10 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 	// Scroll the tree.
 	x, y, width, height := t.GetInnerRect()
 	switch t.movement {
+	case treeScrollUp:
+		t.offsetY -= height / 3
+	case treeScrollDown:
+		t.offsetY += height / 3
 	case treeUp:
 		t.offsetY--
 	case treeDown:
@@ -1033,8 +1094,14 @@ func (t *TreeView) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 }
 
 // MouseHandler returns the mouse handler for this primitive.
-func (t *TreeView) MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
-	return t.WrapMouseHandler(func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
+func (t *TreeView) MouseHandler() func(
+	action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive,
+) {
+
+	return t.WrapMouseHandler(func(
+		action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive),
+	) (consumed bool, capture Primitive) {
+
 		x, y := event.Position()
 		if !t.InRect(x, y) {
 			return false, nil
@@ -1044,6 +1111,7 @@ func (t *TreeView) MouseHandler() func(action MouseAction, event *tcell.EventMou
 		case MouseLeftClick:
 			_, rectY, _, _ := t.GetInnerRect()
 			y -= rectY
+			y += t.offsetY
 			if y >= 0 && y < len(t.nodes) {
 				node := t.nodes[y]
 				if node.selectable {
@@ -1059,10 +1127,10 @@ func (t *TreeView) MouseHandler() func(action MouseAction, event *tcell.EventMou
 			consumed = true
 			setFocus(t)
 		case MouseScrollUp:
-			t.movement = treeUp
+			t.movement = treeScrollUp
 			consumed = true
 		case MouseScrollDown:
-			t.movement = treeDown
+			t.movement = treeScrollDown
 			consumed = true
 		}
 
