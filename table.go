@@ -1471,6 +1471,14 @@ func (t *Table) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 		case MouseScrollDown:
 			t.rowOffset++
 			consumed = true
+
+		// TODO test horizontal scrolling
+		case MouseScrollLeft:
+			t.columnOffset--
+			consumed = true
+		case MouseScrollRight:
+			t.columnOffset++
+			consumed = true
 		}
 
 		return

@@ -942,7 +942,11 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 		}
 
 		// Draw the highlight.
-		PrintStyle(screen, []byte(strings.Repeat(" ", width-1)), x, posY, width-1, AlignLeft, lineStyle)
+		space := ""
+		if width > 0 {
+			space = strings.Repeat(" ", width-1)
+		}
+		PrintStyle(screen, []byte(space), x, posY, width-1, AlignLeft, lineStyle)
 
 		// Draw the graphics.
 		if t.graphics {
