@@ -2,6 +2,8 @@ module github.com/pancsta/cview
 
 go 1.12
 
+replace code.rocketnine.space/tslocum/cview => .
+
 require (
 	code.rocketnine.space/tslocum/cbind v0.1.5
 	code.rocketnine.space/tslocum/cview v1.5.9

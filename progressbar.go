@@ -95,6 +95,10 @@ func (p *ProgressBar) SetMax(max int) {
 	p.Lock()
 	defer p.Unlock()
 
+	// TODO progress bar needs at least 1 step, or the drawing will hang
+	if max < 1 {
+		max = 1
+	}
 	p.max = max
 }
 
