@@ -202,3 +202,11 @@ func (f *FocusManager) Reset() {
 	f.focused = 0
 	f.elements = nil
 }
+
+// Len returns the length of added primitives.
+func (f *FocusManager) Len() int {
+	f.Lock()
+	defer f.Unlock()
+
+	return len(f.elements)
+}
