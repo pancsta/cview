@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/cview"
 )
 
 const sliderCode = `[green]package[white] main
@@ -13,7 +13,7 @@ const sliderCode = `[green]package[white] main
     [red]"fmt"[white]
 
     [red]"github.com/gdamore/tcell/v2"[white]
-    [red]"code.rocketnine.space/tslocum/cview"[white]
+    [red]"github.com/pancsta/cview"[white]
 )
 
 [green]func[white] [yellow]main[white]() {

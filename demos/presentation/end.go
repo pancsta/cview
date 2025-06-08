@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/cview"
 )
 
 // End shows the final slide.
@@ -13,7 +13,7 @@ func End(nextSlide func()) (title string, info string, content cview.Primitive) 
 	textView.SetDoneFunc(func(key tcell.Key) {
 		nextSlide()
 	})
-	url := "https://code.rocketnine.space/tslocum/cview"
+	url := "https://github.com/pancsta/cview"
 	fmt.Fprint(textView, url)
 	return "End", "", Center(len(url), 1, textView)
 }

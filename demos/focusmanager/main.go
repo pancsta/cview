@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"code.rocketnine.space/tslocum/cbind"
-	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/cview"
 )
 
 func wrap(f func()) func(ev *tcell.EventKey) *tcell.EventKey {

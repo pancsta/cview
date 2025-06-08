@@ -1,13 +1,13 @@
 package main
 
 import (
-	"code.rocketnine.space/tslocum/cview"
+	"github.com/pancsta/cview"
 )
 
 const form = `[green]package[white] main
 
 [green]import[white] (
-    [red]"code.rocketnine.space/tslocum/cview"[white]
+    [red]"github.com/pancsta/cview"[white]
 )
 
 [green]func[white] [yellow]main[white]() {

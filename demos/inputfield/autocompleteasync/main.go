@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"code.rocketnine.space/tslocum/cview"
 	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/cview"
 )
 
 type company struct {

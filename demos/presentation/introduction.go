@@ -1,6 +1,6 @@
 package main
 
-import "code.rocketnine.space/tslocum/cview"
+import "github.com/pancsta/cview"
 
 // Introduction returns a cview.List with the highlights of the cview package.
 func Introduction(nextSlide func()) (title string, info string, content cview.Primitive) {

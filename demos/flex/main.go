@@ -2,7 +2,7 @@
 package main
 
 import (
-	"code.rocketnine.space/tslocum/cview"
+	"github.com/pancsta/cview"
 )
 
 func demoBox(title string) *cview.Box {
