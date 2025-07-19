@@ -366,14 +366,24 @@ func (p *Panels) MouseHandler() func(action MouseAction, event *tcell.EventMouse
 			return false, nil
 		}
 
+		panels := make([]*panel, 0, len(p.panels))
+
 		// Pass mouse events along to the last visible panel item that takes it.
+		p.RLock()
 		for index := len(p.panels) - 1; index >= 0; index-- {
 			panel := p.panels[index]
 			if panel.Visible {
-				consumed, capture = panel.Item.MouseHandler()(action, event, setFocus)
-				if consumed {
-					return
-				}
+				panels = append(panels, panel)
+			}
+		}
+		p.RUnlock()
+
+		// iterate outside the lock
+		for _, panel := range panels {
+			// TODO panel lock
+			consumed, capture = panel.Item.MouseHandler()(action, event, setFocus)
+			if consumed {
+				return
 			}
 		}
 

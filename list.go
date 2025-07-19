@@ -234,7 +234,7 @@ func NewList() *List {
 // Calling this function triggers a "changed" event if the selection changes.
 func (l *List) SetCurrentItem(index int) {
 	// TODO deadlock
-	//l.Lock()
+	l.Lock()
 
 	if index < 0 {
 		index = len(l.items) + index
@@ -253,10 +253,10 @@ func (l *List) SetCurrentItem(index int) {
 
 	if index != previousItem && index < len(l.items) && l.changed != nil {
 		item := l.items[index]
-		//l.Unlock()
+		l.Unlock()
 		l.changed(index, item)
 	} else {
-		//l.Unlock()
+		l.Unlock()
 	}
 }
 
@@ -797,7 +797,10 @@ func (l *List) transform(tr Transformation) {
 		}
 
 		item := l.items[l.currentItem]
+		item.RLock()
 		if !item.disabled && (item.shortcut > 0 || len(item.mainText) > 0 || len(item.secondaryText) > 0) {
+
+			item.RUnlock()
 			break
 		}
 
@@ -806,6 +809,8 @@ func (l *List) transform(tr Transformation) {
 		} else {
 			l.currentItem++
 		}
+
+		item.RUnlock()
 	}
 
 	l.updateOffset()
@@ -1258,8 +1263,17 @@ func (l *List) indexAtPoint(x, y int) int {
 }
 
 // MouseHandler returns the mouse handler for this primitive.
-func (l *List) MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
-	return l.WrapMouseHandler(func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
+func (l *List) MouseHandler() func(
+	action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
+
+	return l.WrapMouseHandler(func(
+		action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
+
+		x, y := event.Position()
+		if !l.InRect(x, y) {
+			return false, nil
+		}
+
 		l.Lock()
 
 		// Pass events to context menu.

@@ -226,6 +226,16 @@ func (g *Grid) AddItem(p Primitive, row, column, rowSpan, colSpan, minGridHeight
 	})
 }
 
+func (g *Grid) HasItem(p Primitive) bool {
+	for _, item := range g.items {
+		if item.Item == p {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (g *Grid) UpdateItem(p Primitive, row, column, rowSpan, colSpan, minGridHeight, minGridWidth int, focus bool) {
 	g.Lock()
 	defer g.Unlock()
@@ -244,17 +254,6 @@ func (g *Grid) UpdateItem(p Primitive, row, column, rowSpan, colSpan, minGridHei
 		item.Focus = focus
 		break
 	}
-
-	g.items = append(g.items, &gridItem{
-		Item:          p,
-		Row:           row,
-		Column:        column,
-		Height:        rowSpan,
-		Width:         colSpan,
-		MinGridHeight: minGridHeight,
-		MinGridWidth:  minGridWidth,
-		Focus:         focus,
-	})
 }
 
 // RemoveItem removes all items for the given primitive from the grid, keeping

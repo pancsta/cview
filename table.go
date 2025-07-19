@@ -826,6 +826,8 @@ func (t *Table) Draw(screen tcell.Screen) {
 		width-- // Subtract space for scroll bar.
 	}
 
+	// TODO horizontal scrollbar
+
 	// Return the cell at the specified position (nil if it doesn't exist).
 	getCell := func(row, column int) *TableCell {
 		if row < 0 || column < 0 || row >= len(t.cells) || column >= len(t.cells[row]) {
@@ -844,9 +846,15 @@ func (t *Table) Draw(screen tcell.Screen) {
 		}
 		for t.selectedRow < len(t.cells) {
 			cell := getCell(t.selectedRow, t.selectedColumn)
-			if cell == nil || !cell.NotSelectable {
+			if cell == nil {
 				break
 			}
+			cell.RLock()
+			if !cell.NotSelectable {
+				cell.RUnlock()
+				break
+			}
+			cell.RUnlock()
 			t.selectedColumn++
 			if t.selectedColumn > t.lastColumn {
 				t.selectedColumn = 0
@@ -984,6 +992,8 @@ ColumnLoop:
 		}
 		for _, row := range evaluationRows {
 			if cell := getCell(row, column); cell != nil {
+				cell.RLock()
+
 				_, _, _, _, _, _, cellWidth := decomposeText(cell.Text, true, false)
 				if cell.MaxWidth > 0 && cell.MaxWidth < cellWidth {
 					cellWidth = cell.MaxWidth
@@ -994,6 +1004,7 @@ ColumnLoop:
 				if cell.Expansion > expansion {
 					expansion = cell.Expansion
 				}
+				cell.RUnlock()
 			}
 		}
 		if maxWidth < 0 {
@@ -1071,6 +1082,7 @@ ColumnLoop:
 			if cell == nil {
 				continue
 			}
+			cell.Lock()
 
 			// Draw text.
 			finalWidth := columnWidth
@@ -1083,6 +1095,7 @@ ColumnLoop:
 				_, _, style, _ := screen.GetContent(x+columnX+finalWidth, y+rowY)
 				PrintStyle(screen, []byte(string(SemigraphicsHorizontalEllipsis)), x+columnX+finalWidth, y+rowY, 1, AlignLeft, style)
 			}
+			cell.Unlock()
 		}
 
 		// Draw bottom border.

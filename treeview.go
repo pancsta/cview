@@ -82,47 +82,88 @@ func NewTreeNode(text string) *TreeNode {
 // The callback returns whether traversal should continue with the traversed
 // node's child nodes (true) or not recurse any deeper (false).
 func (n *TreeNode) Walk(callback func(node, parent *TreeNode, depth int) bool) {
-	n.Lock()
-	defer n.Unlock()
+	// n.RLock()
+	// defer n.RUnlock()
 
 	n.walk(callback)
 }
+
+// TODO remove
 func (n *TreeNode) WalkUnsafe(callback func(node, parent *TreeNode, depth int) bool) {
 	n.walk(callback)
 }
 
 func (n *TreeNode) GetParent() *TreeNode {
-	n.Lock()
-	defer n.Unlock()
+	n.RLock()
+	defer n.RUnlock()
 
 	return n.parent
 }
 
-func (n *TreeNode) walk(callback func(node, parent *TreeNode, depth int) bool) {
-	n.parent = nil
-	nodes := []*TreeNode{n}
+// TODO rewrite
+func (n *TreeNode) walk(callback func(
+	node, parent *TreeNode, depth int) bool) {
+
+	type nodeInfo struct {
+		node     *TreeNode
+		level    int
+		children int
+		parent   *TreeNode
+	}
+	n.RLock()
+	nodes := []*nodeInfo{{node: n, level: n.level, parent: n.parent}}
+	n.RUnlock()
+
+	// Process nodes and collect them
+	var processedNodes []*nodeInfo
+
 	for len(nodes) > 0 {
-		// Pop the top node and process it.
-		node := nodes[len(nodes)-1]
+		// Pop the top node and process it
+		current := nodes[len(nodes)-1]
 		nodes = nodes[:len(nodes)-1]
 
-		// make sure node.level is always set
-		node.level = 0
-		parent := node.parent
-		for parent != nil {
-			node.level++
-			parent = parent.parent
-		}
+		processedNodes = append(processedNodes, current)
 
-		if !callback(node, node.parent, node.level) {
-			// Don't add any children.
-			continue
-		}
+		current.node.RLock()
 
-		// Add children in reverse order.
-		for index := len(node.children) - 1; index >= 0; index-- {
-			node.children[index].parent = node
-			nodes = append(nodes, node.children[index])
+		// Add children in reverse order
+		children := current.node.children
+
+		for index := len(children) - 1; index >= 0; index-- {
+			ch := children[index]
+			nodes = append(nodes, &nodeInfo{
+				node:     ch,
+				level:    current.level + 1,
+				children: len(ch.children),
+				parent:   current.node,
+			})
+		}
+		current.node.RUnlock()
+	}
+
+	nodes = processedNodes
+
+	for i := 0; i < len(nodes); i++ {
+		current := nodes[i]
+		if !callback(current.node, current.parent, current.level) {
+			if current.children == 0 {
+				continue
+			}
+
+			found := false
+			// scroll to the next node with same level
+			for ii := i + current.children; ii < len(nodes); ii++ {
+				if nodes[ii].level <= current.level {
+					i = ii - 1
+					found = true
+					break
+				}
+			}
+
+			// tail
+			if !found {
+				i = len(nodes) - 1
+			}
 		}
 	}
 }
@@ -193,6 +234,9 @@ func (n *TreeNode) AddChild(node *TreeNode) {
 	defer n.Unlock()
 
 	n.children = append(n.children, node)
+	for _, child := range n.children {
+		child.parent = n
+	}
 }
 
 // SetSelectable sets a flag indicating whether this node can be focused and
@@ -263,6 +307,9 @@ func (n *TreeNode) Collapse() {
 // ExpandAll expands this node and all descendent nodes.
 func (n *TreeNode) ExpandAll() {
 	n.Walk(func(node, parent *TreeNode, _ int) bool {
+		node.Lock()
+		defer node.Unlock()
+
 		node.expanded = true
 		return true
 	})
@@ -271,6 +318,9 @@ func (n *TreeNode) ExpandAll() {
 // CollapseAll collapses this node and all descendent nodes.
 func (n *TreeNode) CollapseAll() {
 	n.Walk(func(node, parent *TreeNode, _ int) bool {
+		node.Lock()
+		defer node.Unlock()
+
 		n.expanded = false
 		return true
 	})
@@ -712,9 +762,13 @@ func (t *TreeView) process() {
 	if t.graphics {
 		graphicsOffset = 1
 	}
-	t.root.walk(func(node, parent *TreeNode, _ int) bool {
+
+	// walk via the node's lock
+	t.root.Walk(func(node, parent *TreeNode, _ int) bool {
+		node.Lock()
+		defer node.Unlock()
+
 		// Set node attributes.
-		node.parent = parent
 		if parent == nil {
 			node.level = 0
 			node.graphicsX = 0
@@ -850,7 +904,7 @@ func (t *TreeView) process() {
 		selectedIndex = newSelectedIndex
 
 		// Move selection into viewport.
-		if t.movement != treeScrollUp && t.movement != treeScrollDown && !moved {
+		if t.movement != treeScrollUp && t.movement != treeScrollDown && t.movement != treeNone && !moved {
 			if selectedIndex-t.offsetY >= height {
 				t.offsetY = selectedIndex - height + 1
 			}
@@ -929,96 +983,107 @@ func (t *TreeView) Draw(screen tcell.Screen) {
 	// Draw the tree.
 	posY := y
 	for index, node := range t.nodes {
-		lineStyle := tcell.StyleDefault.Background(t.backgroundColor).Foreground(t.graphicsColor)
-		if node.highlighted {
-			lineStyle = lineStyle.Background(*t.highlightColor)
-		}
-		// Skip invisible parts.
-		if posY >= y+height {
+		doBreak := false
+		func() {
+			node.Lock()
+			defer node.Unlock()
+
+			lineStyle := tcell.StyleDefault.Background(t.backgroundColor).Foreground(t.graphicsColor)
+			if node.highlighted {
+				lineStyle = lineStyle.Background(*t.highlightColor)
+			}
+			// Skip invisible parts.
+			if posY >= y+height {
+				doBreak = true
+				return
+			}
+			if index < t.offsetY {
+				return
+			}
+
+			// Draw the highlight.
+			space := ""
+			if width > 0 {
+				space = strings.Repeat(" ", width-1)
+			}
+			PrintStyle(screen, []byte(space), x, posY, width-1, AlignLeft, lineStyle)
+
+			// Draw the graphics.
+			if t.graphics {
+				// Draw ancestor branches.
+				ancestor := node.parent
+				for ancestor != nil && ancestor.parent != nil && ancestor.parent.level >= t.topLevel {
+					if ancestor.graphicsX >= width {
+						return
+					}
+
+					// Draw a branch if this ancestor is not a last child.
+					idx := len(ancestor.parent.children) - 1
+					// TODO runtime error: index out of range [-1]
+					if idx >= 0 && ancestor.parent.children[idx] != ancestor {
+						if posY-1 >= y && ancestor.textX > ancestor.graphicsX {
+							PrintJoinedSemigraphics(screen, x+ancestor.graphicsX, posY-1, Borders.Vertical, t.graphicsColor)
+						}
+						if posY < y+height {
+							screen.SetContent(x+ancestor.graphicsX, posY, Borders.Vertical, nil, lineStyle)
+						}
+					}
+					ancestor = ancestor.parent
+				}
+
+				if node.textX > node.graphicsX && node.graphicsX < width {
+					// Connect to the node above.
+					if posY-1 >= y && t.nodes[index-1].graphicsX <= node.graphicsX && t.nodes[index-1].textX > node.graphicsX {
+						PrintJoinedSemigraphics(screen, x+node.graphicsX, posY-1, Borders.TopLeft, t.graphicsColor)
+					}
+
+					// Join this node.
+					if posY < y+height {
+						screen.SetContent(x+node.graphicsX, posY, Borders.BottomLeft, nil, lineStyle)
+						for pos := node.graphicsX + 1; pos < node.textX && pos < width; pos++ {
+							screen.SetContent(x+pos, posY, Borders.Horizontal, nil, lineStyle)
+						}
+					}
+				}
+			}
+
+			// Draw the prefix and the text.
+			if node.textX < width && posY < y+height {
+
+				// Prefix.
+				var prefixWidth int
+				if len(t.prefixes) > 0 {
+					_, prefixWidth = PrintStyle(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, width-node.textX, AlignLeft, lineStyle.Foreground(node.color))
+				}
+
+				// Text.
+				if node.textX+prefixWidth < width {
+					style := tcell.StyleDefault.Foreground(node.color).Bold(node.bold).Underline(node.underline)
+					if node == t.currentNode {
+						backgroundColor := node.color
+						foregroundColor := t.backgroundColor
+						if t.selectedTextColor != nil {
+							foregroundColor = *t.selectedTextColor
+						}
+						if t.selectedBackgroundColor != nil {
+							backgroundColor = *t.selectedBackgroundColor
+						}
+						style = tcell.StyleDefault.Background(backgroundColor).Foreground(foregroundColor)
+					}
+					PrintStyle(screen, []byte(node.text), x+node.textX+prefixWidth, posY, width-node.textX-prefixWidth, AlignLeft, style)
+				}
+			}
+
+			// Draw scroll bar.
+			RenderScrollBar(screen, t.scrollBarVisibility, x+(width-1), posY, height, rows, cursor, posY-y, t.hasFocus, t.scrollBarColor)
+
+			// Advance.
+			posY++
+		}()
+
+		if doBreak {
 			break
 		}
-		if index < t.offsetY {
-			continue
-		}
-
-		// Draw the highlight.
-		space := ""
-		if width > 0 {
-			space = strings.Repeat(" ", width-1)
-		}
-		PrintStyle(screen, []byte(space), x, posY, width-1, AlignLeft, lineStyle)
-
-		// Draw the graphics.
-		if t.graphics {
-			// Draw ancestor branches.
-			ancestor := node.parent
-			for ancestor != nil && ancestor.parent != nil && ancestor.parent.level >= t.topLevel {
-				if ancestor.graphicsX >= width {
-					continue
-				}
-
-				// Draw a branch if this ancestor is not a last child.
-				idx := len(ancestor.parent.children) - 1
-				// TODO runtime error: index out of range [-1]
-				if idx >= 0 && ancestor.parent.children[idx] != ancestor {
-					if posY-1 >= y && ancestor.textX > ancestor.graphicsX {
-						PrintJoinedSemigraphics(screen, x+ancestor.graphicsX, posY-1, Borders.Vertical, t.graphicsColor)
-					}
-					if posY < y+height {
-						screen.SetContent(x+ancestor.graphicsX, posY, Borders.Vertical, nil, lineStyle)
-					}
-				}
-				ancestor = ancestor.parent
-			}
-
-			if node.textX > node.graphicsX && node.graphicsX < width {
-				// Connect to the node above.
-				if posY-1 >= y && t.nodes[index-1].graphicsX <= node.graphicsX && t.nodes[index-1].textX > node.graphicsX {
-					PrintJoinedSemigraphics(screen, x+node.graphicsX, posY-1, Borders.TopLeft, t.graphicsColor)
-				}
-
-				// Join this node.
-				if posY < y+height {
-					screen.SetContent(x+node.graphicsX, posY, Borders.BottomLeft, nil, lineStyle)
-					for pos := node.graphicsX + 1; pos < node.textX && pos < width; pos++ {
-						screen.SetContent(x+pos, posY, Borders.Horizontal, nil, lineStyle)
-					}
-				}
-			}
-		}
-
-		// Draw the prefix and the text.
-		if node.textX < width && posY < y+height {
-
-			// Prefix.
-			var prefixWidth int
-			if len(t.prefixes) > 0 {
-				_, prefixWidth = PrintStyle(screen, t.prefixes[(node.level-t.topLevel)%len(t.prefixes)], x+node.textX, posY, width-node.textX, AlignLeft, lineStyle.Foreground(node.color))
-			}
-
-			// Text.
-			if node.textX+prefixWidth < width {
-				style := tcell.StyleDefault.Foreground(node.color).Bold(node.bold).Underline(node.underline)
-				if node == t.currentNode {
-					backgroundColor := node.color
-					foregroundColor := t.backgroundColor
-					if t.selectedTextColor != nil {
-						foregroundColor = *t.selectedTextColor
-					}
-					if t.selectedBackgroundColor != nil {
-						backgroundColor = *t.selectedBackgroundColor
-					}
-					style = tcell.StyleDefault.Background(backgroundColor).Foreground(foregroundColor)
-				}
-				PrintStyle(screen, []byte(node.text), x+node.textX+prefixWidth, posY, width-node.textX-prefixWidth, AlignLeft, style)
-			}
-		}
-
-		// Draw scroll bar.
-		RenderScrollBar(screen, t.scrollBarVisibility, x+(width-1), posY, height, rows, cursor, posY-y, t.hasFocus, t.scrollBarColor)
-
-		// Advance.
-		posY++
 	}
 }
 
