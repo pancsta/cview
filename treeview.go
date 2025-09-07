@@ -88,11 +88,6 @@ func (n *TreeNode) Walk(callback func(node, parent *TreeNode, depth int) bool) {
 	n.walk(callback)
 }
 
-// TODO remove
-func (n *TreeNode) WalkUnsafe(callback func(node, parent *TreeNode, depth int) bool) {
-	n.walk(callback)
-}
-
 func (n *TreeNode) GetParent() *TreeNode {
 	n.RLock()
 	defer n.RUnlock()

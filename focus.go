@@ -80,6 +80,10 @@ func (f *FocusManager) Focus(p Primitive) {
 	f.Lock()
 	defer f.Unlock()
 
+	if len(f.elements) == 0 {
+		return
+	}
+
 	for i, element := range f.elements {
 		if p == element.primitive && !element.disabled {
 			f.focused = i
