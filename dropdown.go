@@ -489,6 +489,13 @@ func (d *DropDown) SetOptions(selected func(index int, option *DropDownOption), 
 	d.addOptions(options...)
 	d.selected = selected
 }
+func (d *DropDown) ClearOptions() {
+	d.Lock()
+	defer d.Unlock()
+
+	d.list.Clear()
+	d.options = nil
+}
 
 // SetChangedFunc sets a handler which is called when the user changes the
 // focused drop-down option. The handler is provided with the selected option's
