@@ -2,6 +2,7 @@ package cview
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -526,9 +527,8 @@ func (t *TreeView) GetRoot() *TreeNode {
 	return t.root
 }
 
-// SetCurrentNode focuses a node or, when provided with nil, clears focus.
-// Selected nodes must be visible and selectable, or else the selection will be
-// changed to the top-most selectable and visible node.
+// SetCurrentNode focuses a node and scrolls into viewport or, when provided with nil,
+// clears focus.
 //
 // This function does NOT trigger the "changed" callback.
 func (t *TreeView) SetCurrentNode(node *TreeNode) {
@@ -540,6 +540,36 @@ func (t *TreeView) SetCurrentNode(node *TreeNode) {
 		t.Unlock()
 		t.currentNode.focused()
 		t.Lock()
+	}
+
+	t.scrollCurrentIntoView(true)
+}
+
+// ScrollCurrentIntoView scroll the current node into view. [soft] keeps the selection in the middle.
+func (t *TreeView) ScrollCurrentIntoView(soft bool) {
+	t.Lock()
+	defer t.Unlock()
+
+	t.scrollCurrentIntoView(soft)
+}
+
+func (t *TreeView) scrollCurrentIntoView(soft bool) {
+	// scroll into view
+	currIdx := slices.Index(t.nodes, t.currentNode)
+	_, _, _, height := t.GetInnerRect()
+	// correct
+	height = max(height-1, 0)
+
+	if t.offsetY > currIdx {
+		correctedY := min(t.offsetY, currIdx)
+		t.offsetY = correctedY
+	} else if t.offsetY+height < currIdx {
+		correctedY := max(t.offsetY, currIdx)
+		if soft {
+			t.offsetY = correctedY - height/2
+		} else {
+			t.offsetY = correctedY
+		}
 	}
 }
 
@@ -726,6 +756,7 @@ func (t *TreeView) Transform(tr Transformation) {
 	t.Lock()
 	defer t.Unlock()
 
+	softScroll := false
 	switch tr {
 	case TransformFirstItem:
 		t.movement = treeHome
@@ -733,8 +764,10 @@ func (t *TreeView) Transform(tr Transformation) {
 		t.movement = treeEnd
 	case TransformPreviousItem:
 		t.movement = treeUp
+		softScroll = true
 	case TransformNextItem:
 		t.movement = treeDown
+		softScroll = true
 	case TransformPreviousPage:
 		t.movement = treePageUp
 	case TransformNextPage:
@@ -742,6 +775,7 @@ func (t *TreeView) Transform(tr Transformation) {
 	}
 
 	t.process()
+	t.scrollCurrentIntoView(softScroll)
 }
 
 // process builds the visible tree, populates the "nodes" slice, and processes
@@ -1127,6 +1161,8 @@ func (t *TreeView) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 		t.Lock()
 		defer t.Unlock()
 
+		softScroll := false
+
 		// Because the tree is flattened into a list only at drawing time, we also
 		// postpone the (selection) movement to drawing time.
 		if HitShortcut(event, Keys.Cancel, Keys.MovePreviousField, Keys.MoveNextField) {
@@ -1141,8 +1177,10 @@ func (t *TreeView) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 			t.movement = treeEnd
 		} else if HitShortcut(event, Keys.MoveUp, Keys.MoveUp2) {
 			t.movement = treeUp
+			softScroll = true
 		} else if HitShortcut(event, Keys.MoveDown, Keys.MoveDown2) {
 			t.movement = treeDown
+			softScroll = true
 		} else if HitShortcut(event, Keys.MovePreviousPage) {
 			t.movement = treePageUp
 		} else if HitShortcut(event, Keys.MoveNextPage) {
@@ -1154,6 +1192,7 @@ func (t *TreeView) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 		}
 
 		t.process()
+		t.scrollCurrentIntoView(softScroll)
 	})
 }
 
