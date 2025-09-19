@@ -308,7 +308,7 @@ func (a *Application) Run() error {
 		return err
 	}
 
-	defer a.HandlePanic()
+	// defer a.HandlePanic()
 
 	// Draw the screen for the first time.
 	a.Unlock()
@@ -838,13 +838,10 @@ func (a *Application) SetFocus(p Primitive) {
 	if a.screen != nil {
 		a.screen.HideCursor()
 	}
+	a.Unlock()
 
 	if a.afterFocus != nil {
-		a.Unlock()
-
 		a.afterFocus(p)
-	} else {
-		a.Unlock()
 	}
 
 	if p != nil {
