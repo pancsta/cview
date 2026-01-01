@@ -1,9 +1,12 @@
 # Fork
 
-This is a fork of [code.rocket9labs.com/tslocum/cview](https://code.rocket9labs.com/tslocum/cview), which adds:
-- tree node highlighting
-- tree node bold style
-- tree node underscore style
+This is a fork of [https://codeberg.org/tslocum/cview](https://codeberg.org/tslocum/cview), which adds:
+- tree row highlighting
+- tree node bold & underscore
+- ScrollView for any Primitive
+- many race condition fixes
+- minor setters / getters
+- no nested panics
 
 Used by [asyncmachine-go](https://github.com/pancsta/asyncmachine-go).
 
