@@ -61,3 +61,10 @@ type Primitive interface {
 	// Box.WrapMouseHandler() so you inherit that functionality.
 	MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive)
 }
+
+
+// TODO
+// // HasFocus returns whether or not this primitive has focus.
+// func (c *BarChart) HasFocus() bool {
+// 	return c.Box.HasFocus()
+// }

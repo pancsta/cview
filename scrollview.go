@@ -240,7 +240,7 @@ func (f *ScrollView) Draw(screen tcell.Screen) {
 	// fill the remaining space
 	if pos < y+visibleheight {
 		for i := pos; i < y+visibleheight; i++ {
-			for x := 0; x < width; x++ {
+			for xx := 0; x+xx < width; xx++ {
 				screen.SetContent(x, i, ' ', nil, tcell.StyleDefault.Background(Styles.PrimitiveBackgroundColor))
 			}
 		}
@@ -250,18 +250,14 @@ func (f *ScrollView) Draw(screen tcell.Screen) {
 		return
 	}
 
-	// Draw scroll bar last.
-	defer func() {
+	cursor := int(float64(contentHeight) * (float64(firstVisibleY-y) / float64(contentHeight-visibleheight)))
+	if cursor > contentHeight {
+		cursor = contentHeight
+	}
 
-		cursor := int(float64(contentHeight) * (float64(firstVisibleY-y) / float64(contentHeight-visibleheight)))
-		if cursor > contentHeight {
-			cursor = contentHeight
-		}
-
-		for printed := 0; printed < visibleheight; printed++ {
-			RenderScrollBar(screen, f.scrollBarVisibility, x+width, y+printed, visibleheight, contentHeight, cursor, printed, f.hasFocus, f.scrollBarColor)
-		}
-	}()
+	for printed := 0; printed < visibleheight; printed++ {
+		RenderScrollBar(screen, f.scrollBarVisibility, x+width, y+printed, visibleheight, contentHeight, cursor, printed, f.hasFocus, f.scrollBarColor)
+	}
 }
 
 // ScrollTo scrolls to the specified height and width (both starting with 0).
