@@ -299,6 +299,7 @@ func (a *Application) EnableMouse(enable bool) {
 // Run starts the application and thus the event loop. This function returns
 // when Stop() was called.
 func (a *Application) Run() error {
+	// TODO split
 	a.Lock()
 
 	// Initialize screen
@@ -308,56 +309,13 @@ func (a *Application) Run() error {
 		return err
 	}
 
+	semaphore := &sync.Mutex{}
+
 	// defer a.HandlePanic()
 
 	// Draw the screen for the first time.
 	a.Unlock()
 	a.draw()
-
-	// Separate loop to wait for screen replacement events.
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer a.HandlePanic()
-
-		defer wg.Done()
-		for {
-			a.RLock()
-			screen := a.screen
-			a.RUnlock()
-			if screen == nil {
-				// We have no screen. Let's stop.
-				a.QueueEvent(nil)
-				break
-			}
-
-			// A screen was finalized (event is nil). Wait for a new screen.
-			screen = <-a.screenReplacement
-			if screen == nil {
-				// No new screen. We're done.
-				a.QueueEvent(nil)
-				return
-			}
-
-			// We have a new screen. Keep going.
-			a.Lock()
-			a.screen = screen
-			a.Unlock()
-
-			// Initialize and draw this screen.
-			if err := screen.Init(); err != nil {
-				panic(err)
-			}
-			if a.enableBracketedPaste {
-				screen.EnablePaste()
-			}
-			if a.enableMouse {
-				screen.EnableMouse()
-			}
-
-			a.draw()
-		}
-	}()
 
 	handle := func(event interface{}) {
 		a.RLock()
@@ -440,7 +398,68 @@ func (a *Application) Run() error {
 		}
 	}
 
-	semaphore := &sync.Mutex{}
+	// Separate loop to wait for screen replacement events.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer a.HandlePanic()
+
+		defer wg.Done()
+		for {
+			// a.RLock()
+			// screen := a.screen
+			// a.RUnlock()
+			// if screen == nil {
+			// 	// We have no screen. Let's stop.
+			// 	a.QueueEvent(nil)
+			// 	break
+			// }
+
+			// A screen was finalized (event is nil). Wait for a new screen.
+			var screen tcell.Screen
+			screen = <-a.screenReplacement
+			if screen == nil {
+				continue
+			}
+
+			// We have a new screen. Keep going.
+			a.Lock()
+			a.screen = screen
+			wg.Add(1)
+			a.Unlock()
+
+			// Initialize and draw this screen.
+			if err := screen.Init(); err != nil {
+				// TODO err chan
+				panic(err)
+			}
+			if a.enableBracketedPaste {
+				screen.EnablePaste()
+			}
+			if a.enableMouse {
+				screen.EnableMouse()
+			}
+			// TODO disable explicitly
+
+			go func() {
+
+				// Start screen event loop.
+				for {
+					// Wait for next event.
+					event := screen.PollEvent()
+					if event == nil {
+						break
+					}
+
+					semaphore.Lock()
+					handle(event)
+					semaphore.Unlock()
+				}
+			}()
+
+			a.draw()
+		}
+	}()
 
 	go func() {
 		defer a.HandlePanic()
@@ -462,7 +481,7 @@ func (a *Application) Run() error {
 		}
 	}()
 
-	// Start screen event loop.
+	// Start screen event loop. TODO support replacement
 	for {
 		a.Lock()
 		screen := a.screen
