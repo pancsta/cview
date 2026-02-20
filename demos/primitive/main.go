@@ -4,8 +4,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
+	"github.com/pancsta/tcell-v2"
 )
 
 // RadioButtons implements a simple primitive for radio button selections.

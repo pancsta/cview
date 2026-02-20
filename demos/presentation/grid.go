@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
+	"github.com/pancsta/tcell-v2"
 )
 
 // Grid demonstrates the grid layout.

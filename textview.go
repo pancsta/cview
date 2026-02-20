@@ -7,9 +7,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/lucasb-eyer/go-colorful"
 	"github.com/mattn/go-runewidth"
+	"github.com/pancsta/tcell-v2"
 	"github.com/rivo/uniseg"
 )
 

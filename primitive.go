@@ -1,6 +1,6 @@
 package cview
 
-import "github.com/gdamore/tcell/v2"
+import "github.com/pancsta/tcell-v2"
 
 // Primitive is the top-most interface for all graphical primitives.
 type Primitive interface {
@@ -61,7 +61,6 @@ type Primitive interface {
 	// Box.WrapMouseHandler() so you inherit that functionality.
 	MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive)
 }
-
 
 // TODO
 // // HasFocus returns whether or not this primitive has focus.

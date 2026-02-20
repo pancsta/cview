@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/tcell-v2"
 )
 
 const (

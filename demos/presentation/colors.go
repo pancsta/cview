@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
+	"github.com/pancsta/tcell-v2"
 )
 
 const colorsText = `You can use color tags almost everywhere to partially change the color of a string.

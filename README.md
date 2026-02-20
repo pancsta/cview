@@ -7,6 +7,8 @@ This is a fork of [https://codeberg.org/tslocum/cview](https://codeberg.org/tslo
 - many race condition fixes
 - minor setters / getters
 - no nested panics
+- fixed screen replacement for SSH swaps
+- inlined cbind into the monorepo
 
 Used by [asyncmachine-go](https://github.com/pancsta/asyncmachine-go).
 

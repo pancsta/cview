@@ -3,7 +3,7 @@ package cview
 import (
 	"sync"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/tcell-v2"
 )
 
 // frameText holds information about a line of text shown in the frame.

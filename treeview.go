@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/pancsta/tcell-v2"
 )
 
 // Tree navigation events.
