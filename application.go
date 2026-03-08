@@ -298,6 +298,7 @@ func (a *Application) EnableMouse(enable bool) {
 
 // Run starts the application and thus the event loop. This function returns
 // when Stop() was called.
+// TODO rewrite event loop to asyncmachine
 func (a *Application) Run() error {
 	// TODO split
 	a.Lock()
@@ -404,16 +405,7 @@ func (a *Application) Run() error {
 	go func() {
 		defer a.HandlePanic()
 
-		defer wg.Done()
 		for {
-			// a.RLock()
-			// screen := a.screen
-			// a.RUnlock()
-			// if screen == nil {
-			// 	// We have no screen. Let's stop.
-			// 	a.QueueEvent(nil)
-			// 	break
-			// }
 
 			// A screen was finalized (event is nil). Wait for a new screen.
 			var screen tcell.Screen
@@ -449,6 +441,7 @@ func (a *Application) Run() error {
 					event := screen.PollEvent()
 					if event == nil {
 						break
+						wg.Done()
 					}
 
 					semaphore.Lock()
@@ -481,13 +474,14 @@ func (a *Application) Run() error {
 		}
 	}()
 
-	// Start screen event loop. TODO support replacement
+	// Start screen event loop.
 	for {
 		a.Lock()
 		screen := a.screen
 		a.Unlock()
 
 		if screen == nil {
+			wg.Done()
 			break
 		}
 

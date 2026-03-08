@@ -740,6 +740,13 @@ func (t *TreeView) GetScrollOffset() int {
 	return t.offsetY
 }
 
+func (t *TreeView) SetScrollOffset(offset int) {
+	t.RLock()
+	defer t.RUnlock()
+
+	t.offsetY = offset
+}
+
 // GetRowCount returns the number of "visible" nodes. This includes nodes which
 // fall outside the tree view's box but notably does not include the children
 // of collapsed nodes. Note that this value is only up to date after the tree
