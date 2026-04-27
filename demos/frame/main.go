@@ -2,8 +2,8 @@
 package main
 
 import (
+	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
-	"github.com/pancsta/tcell-v2"
 )
 
 func main() {

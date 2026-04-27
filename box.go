@@ -3,7 +3,7 @@ package cview
 import (
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // Box is the base Primitive for all widgets. It has a background color and

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // TabbedPanels is a tabbed container for other primitives. The tab switcher

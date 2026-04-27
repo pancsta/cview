@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 const pressTimes = 7

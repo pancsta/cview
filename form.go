@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // DefaultFormFieldWidth is the default field screen width of form elements

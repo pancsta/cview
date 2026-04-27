@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
-	"github.com/pancsta/tcell-v2"
 	"github.com/rivo/uniseg"
 )
 

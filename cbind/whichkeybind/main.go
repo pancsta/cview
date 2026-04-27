@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview/cbind"
-	"github.com/pancsta/tcell-v2"
 )
 
 func main() {

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
-	"github.com/pancsta/tcell-v2"
 )
 
 // DropDownOption is one option that can be selected in a drop-down primitive.

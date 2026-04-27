@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
-	"github.com/pancsta/tcell-v2"
 )
 
 const sliderCode = `[green]package[white] main
@@ -12,7 +12,7 @@ const sliderCode = `[green]package[white] main
 [green]import[white] (
     [red]"fmt"[white]
 
-    [red]"github.com/pancsta/tcell-v2"[white]
+    [red]"github.com/gdamore/tcell/v2"[white]
     [red]"github.com/pancsta/cview"[white]
 )
 

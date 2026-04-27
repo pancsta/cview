@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
-	"github.com/pancsta/tcell-v2"
 )
 
 type company struct {

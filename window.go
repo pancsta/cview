@@ -3,7 +3,7 @@ package cview
 import (
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // Window is a draggable, resizable frame around a primitive. Windows must be

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/pancsta/cview"
-	"github.com/pancsta/tcell-v2"
 )
 
 const textView1 = `[green]func[white] [yellow]main[white]() {
@@ -66,7 +66,7 @@ const textView2 = `[green]package[white] main
 [green]import[white] (
     [red]"strconv"[white]
 
-    [red]"github.com/pancsta/tcell-v2"[white]
+    [red]"github.com/gdamore/tcell/v2"[white]
     [red]"github.com/pancsta/cview"[white]
 )
 

@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // ProgressBar indicates the progress of an operation.

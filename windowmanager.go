@@ -3,7 +3,7 @@ package cview
 import (
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // WindowManager provides an area which windows may be added to.

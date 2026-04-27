@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pancsta/tcell-v2"
+	"github.com/gdamore/tcell/v2"
 )
 
 // ListItem represents an item in a List.
