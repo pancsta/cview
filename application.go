@@ -2,6 +2,7 @@ package cview
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -620,7 +621,9 @@ func (a *Application) finalizeScreen() {
 	}
 
 	a.screen = nil
-	screen.Fini()
+	// TODO deadlocks on SSH
+	// screen.Fini()
+	go screen.Fini()
 }
 
 // Suspend temporarily suspends the application by exiting terminal UI mode and
@@ -940,4 +943,45 @@ func (a *Application) RingBell() {
 	a.QueueUpdate(func() {
 		fmt.Print(string(byte(7)))
 	})
+}
+
+// ScreenText extracts the current screen buffer as plain text.
+func (a *Application) ScreenText() string {
+	a.RLock()
+	defer a.RUnlock()
+
+	screen := a.GetScreen()
+
+	return TextFromScreen(screen)
+}
+
+func TextFromScreen(screen tcell.Screen) string {
+	if screen == nil {
+		return ""
+	}
+
+	width, height := screen.Size()
+	var builder strings.Builder
+
+	// Pre-allocate memory based on screen size (width + 1 for newline) * height
+	builder.Grow((width + 1) * height)
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// GetContent returns the rune, combining runes, style, and cell width.
+			// We ignore the style completely, which strips all colors/formatting.
+			str, _, strWidth := screen.Get(x, y)
+			builder.Write([]byte(str))
+
+			// If a character spans multiple cells (e.g., CJK characters or emojis),
+			// skip the next cell(s) to avoid duplicating characters or reading placeholders.
+			if strWidth > 1 {
+				x += strWidth - 1
+			}
+		}
+		// Append a newline at the end of each row
+		builder.WriteRune('\n')
+	}
+
+	return builder.String()
 }
