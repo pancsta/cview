@@ -621,9 +621,18 @@ func (a *Application) finalizeScreen() {
 	}
 
 	a.screen = nil
+
 	// TODO deadlocks on SSH
 	// screen.Fini()
-	go screen.Fini()
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// TODO close of a nil chan `quit`
+			}
+		}()
+		screen.Fini()
+	}()
 }
 
 // Suspend temporarily suspends the application by exiting terminal UI mode and
