@@ -3,6 +3,7 @@ package cview
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -233,29 +234,29 @@ func NewList() *List {
 //
 // Calling this function triggers a "changed" event if the selection changes.
 func (l *List) SetCurrentItem(index int) {
-	// TODO deadlock
 	l.Lock()
+	items := slices.Clone(l.items)
+	changed := l.changed
+	previousItem := l.currentItem
+	l.Unlock()
 
 	if index < 0 {
-		index = len(l.items) + index
+		index = len(items) + index
 	}
-	if index >= len(l.items) {
-		index = len(l.items) - 1
+	if index >= len(items) {
+		index = len(items) - 1
 	}
 	if index < 0 {
 		index = 0
 	}
 
-	previousItem := l.currentItem
 	l.currentItem = index
 
 	l.updateOffset()
 
-	if index != previousItem && index < len(l.items) && l.changed != nil {
-		item := l.items[index]
-		l.Unlock()
-		l.changed(index, item)
-	} else {
+	if index != previousItem && index < len(items) && changed != nil {
+		l.Lock()
+		changed(index, items[index])
 		l.Unlock()
 	}
 }
