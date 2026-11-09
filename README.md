@@ -1,6 +1,7 @@
 # Fork
 
-This is a fork of [https://codeberg.org/tslocum/cview](https://codeberg.org/tslocum/cview), which adds:
+This is a fork of [https://codeberg.org/tslocum/cview](https://codeberg.org/tslocum/cview), log:
+
 - tree row highlighting
 - tree node bold & underscore
 - ScrollView for any Primitive
@@ -9,8 +10,10 @@ This is a fork of [https://codeberg.org/tslocum/cview](https://codeberg.org/tslo
 - no nested panics
 - fixed screen replacement for SSH swaps
 - inlined cbind into the monorepo
+- replace event loop with asyncmachine-go
+- remove all locks, use mach.Eval() in callbacks
 
-Used by [asyncmachine-go](https://github.com/pancsta/asyncmachine-go).
+Used by [am-dbg](https://github.com/pancsta/asyncmachine-go/tools/cmd/am-dbg).
 
 # cview - Terminal-based user interface toolkit
 [![GoDoc](https://code.rocketnine.space/tslocum/godoc-static/raw/branch/master/badge.svg)](https://docs.rocketnine.space/code.rocketnine.space/tslocum/cview)

@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -30,8 +28,6 @@ type Panels struct {
 	// An optional handler which is called whenever the visibility or the order of
 	// panels changes.
 	changed func()
-
-	sync.RWMutex
 }
 
 // NewPanels returns a new Panels object.
@@ -46,17 +42,11 @@ func NewPanels() *Panels {
 // SetChangedFunc sets a handler which is called whenever the visibility or the
 // order of any visible panels changes. This can be used to redraw the panels.
 func (p *Panels) SetChangedFunc(handler func()) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.changed = handler
 }
 
 // GetPanelCount returns the number of panels currently stored in this object.
 func (p *Panels) GetPanelCount() int {
-	p.RLock()
-	defer p.RUnlock()
-
 	return len(p.panels)
 }
 
@@ -72,9 +62,6 @@ func (p *Panels) GetPanelCount() int {
 func (p *Panels) AddPanel(name string, item Primitive, resize, visible bool) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	var added bool
 	for i, pg := range p.panels {
 		if pg.Name == name {
@@ -87,14 +74,10 @@ func (p *Panels) AddPanel(name string, item Primitive, resize, visible bool) {
 		p.panels = append(p.panels, &panel{Item: item, Name: name, Resize: resize, Visible: visible})
 	}
 	if p.changed != nil {
-		p.Unlock()
 		p.changed()
-		p.Lock()
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
@@ -103,18 +86,13 @@ func (p *Panels) AddPanel(name string, item Primitive, resize, visible bool) {
 func (p *Panels) RemovePanel(name string) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	var isVisible bool
 	for index, panel := range p.panels {
 		if panel.Name == name {
 			isVisible = panel.Visible
 			p.panels = append(p.panels[:index], p.panels[index+1:]...)
 			if panel.Visible && p.changed != nil {
-				p.Unlock()
 				p.changed()
-				p.Lock()
 			}
 			break
 		}
@@ -131,17 +109,12 @@ func (p *Panels) RemovePanel(name string) {
 		}
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
 // HasPanel returns true if a panel with the given name exists in this object.
 func (p *Panels) HasPanel(name string) bool {
-	p.RLock()
-	defer p.RUnlock()
-
 	for _, panel := range p.panels {
 		if panel.Name == name {
 			return true
@@ -155,24 +128,17 @@ func (p *Panels) HasPanel(name string) bool {
 func (p *Panels) ShowPanel(name string) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	for _, panel := range p.panels {
 		if panel.Name == name {
 			panel.Visible = true
 			if p.changed != nil {
-				p.Unlock()
 				p.changed()
-				p.Lock()
 			}
 			break
 		}
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
@@ -180,24 +146,17 @@ func (p *Panels) ShowPanel(name string) {
 func (p *Panels) HidePanel(name string) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	for _, panel := range p.panels {
 		if panel.Name == name {
 			panel.Visible = false
 			if p.changed != nil {
-				p.Unlock()
 				p.changed()
-				p.Lock()
 			}
 			break
 		}
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
@@ -205,9 +164,6 @@ func (p *Panels) HidePanel(name string) {
 // visibility to "false".
 func (p *Panels) SetCurrentPanel(name string) {
 	hasFocus := p.HasFocus()
-
-	p.Lock()
-	defer p.Unlock()
 
 	for _, panel := range p.panels {
 		if panel.Name == name {
@@ -217,14 +173,10 @@ func (p *Panels) SetCurrentPanel(name string) {
 		}
 	}
 	if p.changed != nil {
-		p.Unlock()
 		p.changed()
-		p.Lock()
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
@@ -234,26 +186,19 @@ func (p *Panels) SetCurrentPanel(name string) {
 func (p *Panels) SendToFront(name string) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	for index, panel := range p.panels {
 		if panel.Name == name {
 			if index < len(p.panels)-1 {
 				p.panels = append(append(p.panels[:index], p.panels[index+1:]...), panel)
 			}
 			if panel.Visible && p.changed != nil {
-				p.Unlock()
 				p.changed()
-				p.Lock()
 			}
 			break
 		}
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
@@ -263,35 +208,25 @@ func (p *Panels) SendToFront(name string) {
 func (p *Panels) SendToBack(name string) {
 	hasFocus := p.HasFocus()
 
-	p.Lock()
-	defer p.Unlock()
-
 	for index, pg := range p.panels {
 		if pg.Name == name {
 			if index > 0 {
 				p.panels = append(append([]*panel{pg}, p.panels[:index]...), p.panels[index+1:]...)
 			}
 			if pg.Visible && p.changed != nil {
-				p.Unlock()
 				p.changed()
-				p.Lock()
 			}
 			break
 		}
 	}
 	if hasFocus {
-		p.Unlock()
 		p.Focus(p.setFocus)
-		p.Lock()
 	}
 }
 
 // GetFrontPanel returns the front-most visible panel. If there are no visible
 // panels, ("", nil) is returned.
 func (p *Panels) GetFrontPanel() (name string, item Primitive) {
-	p.RLock()
-	defer p.RUnlock()
-
 	for index := len(p.panels) - 1; index >= 0; index-- {
 		if p.panels[index].Visible {
 			return p.panels[index].Name, p.panels[index].Item
@@ -302,9 +237,6 @@ func (p *Panels) GetFrontPanel() (name string, item Primitive) {
 
 // HasFocus returns whether or not this primitive has focus.
 func (p *Panels) HasFocus() bool {
-	p.RLock()
-	defer p.RUnlock()
-
 	for _, panel := range p.panels {
 		if panel.Item.GetFocusable().HasFocus() {
 			return true
@@ -315,9 +247,6 @@ func (p *Panels) HasFocus() bool {
 
 // Focus is called by the application when the primitive receives focus.
 func (p *Panels) Focus(delegate func(p Primitive)) {
-	p.Lock()
-	defer p.Unlock()
-
 	if delegate == nil {
 		return // We cannot delegate so we cannot focus.
 	}
@@ -329,9 +258,7 @@ func (p *Panels) Focus(delegate func(p Primitive)) {
 		}
 	}
 	if topItem != nil {
-		p.Unlock()
 		delegate(topItem)
-		p.Lock()
 	}
 }
 
@@ -342,9 +269,6 @@ func (p *Panels) Draw(screen tcell.Screen) {
 	}
 
 	p.Box.Draw(screen)
-
-	p.Lock()
-	defer p.Unlock()
 
 	x, y, width, height := p.GetInnerRect()
 
@@ -369,14 +293,12 @@ func (p *Panels) MouseHandler() func(action MouseAction, event *tcell.EventMouse
 		panels := make([]*panel, 0, len(p.panels))
 
 		// Pass mouse events along to the last visible panel item that takes it.
-		p.RLock()
 		for index := len(p.panels) - 1; index >= 0; index-- {
 			panel := p.panels[index]
 			if panel.Visible {
 				panels = append(panels, panel)
 			}
 		}
-		p.RUnlock()
 
 		// iterate outside the lock
 		for _, panel := range panels {

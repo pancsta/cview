@@ -4,3 +4,4 @@ tmp/
 vendor/
 *.sh
 cview.test
+/go.work*

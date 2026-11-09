@@ -71,5 +71,5 @@ func TestList(t *testing.T) {
 		t.Errorf("failed to initialize Application: %s", err)
 	}
 
-	l.Draw(app.screen)
+	l.Draw(app.getScreen())
 }

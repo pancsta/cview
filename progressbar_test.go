@@ -64,5 +64,5 @@ func TestProgressBar(t *testing.T) {
 		t.Errorf("failed to initialize Application: %s", err)
 	}
 
-	p.Draw(app.screen)
+	p.Draw(app.getScreen())
 }

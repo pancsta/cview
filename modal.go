@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -33,8 +31,6 @@ type Modal struct {
 	// The optional callback for when the user clicked one of the buttons. It
 	// receives the index of the clicked button and the button's label.
 	done func(buttonIndex int, buttonLabel string)
-
-	sync.RWMutex
 }
 
 // NewModal returns a new centered message window.
@@ -65,43 +61,28 @@ func NewModal() *Modal {
 
 // SetBackgroundColor sets the color of the Modal Frame background.
 func (m *Modal) SetBackgroundColor(color tcell.Color) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.SetBackgroundColor(color)
 	m.frame.SetBackgroundColor(color)
 }
 
 // SetTextColor sets the color of the message text.
 func (m *Modal) SetTextColor(color tcell.Color) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.textColor = color
 }
 
 // SetButtonBackgroundColor sets the background color of the buttons.
 func (m *Modal) SetButtonBackgroundColor(color tcell.Color) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.SetButtonBackgroundColor(color)
 }
 
 // SetButtonTextColor sets the color of the button texts.
 func (m *Modal) SetButtonTextColor(color tcell.Color) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.SetButtonTextColor(color)
 }
 
 // SetButtonsAlign sets the horizontal alignment of the buttons. This must be
 // either AlignLeft, AlignCenter (the default), or AlignRight.
 func (m *Modal) SetButtonsAlign(align int) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.SetButtonsAlign(align)
 }
 
@@ -110,9 +91,6 @@ func (m *Modal) SetButtonsAlign(align int) {
 // handler is also called when the user presses the Escape key. The index will
 // then be negative and the label text an empty string.
 func (m *Modal) SetDoneFunc(handler func(buttonIndex int, buttonLabel string)) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.done = handler
 }
 
@@ -120,44 +98,29 @@ func (m *Modal) SetDoneFunc(handler func(buttonIndex int, buttonLabel string)) {
 // breaks. Note that words are wrapped, too, based on the final size of the
 // window.
 func (m *Modal) SetText(text string) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.text = text
 }
 
 // SetTextAlign sets the horizontal alignment of the text. This must be either
 // AlignLeft, AlignCenter (the default), or AlignRight.
 func (m *Modal) SetTextAlign(align int) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.textAlign = align
 }
 
 // GetForm returns the Form embedded in the window. The returned Form may be
 // modified to include additional elements (e.g. AddInputField, AddFormItem).
 func (m *Modal) GetForm() *Form {
-	m.RLock()
-	defer m.RUnlock()
-
 	return m.form
 }
 
 // GetFrame returns the Frame embedded in the window.
 func (m *Modal) GetFrame() *Frame {
-	m.RLock()
-	defer m.RUnlock()
-
 	return m.frame
 }
 
 // AddButtons adds buttons to the window. There must be at least one button and
 // a "done" handler so the window can be closed again.
 func (m *Modal) AddButtons(labels []string) {
-	m.Lock()
-	defer m.Unlock()
-
 	for index, label := range labels {
 		func(i int, l string) {
 			m.form.AddButton(label, func() {
@@ -181,17 +144,11 @@ func (m *Modal) AddButtons(labels []string) {
 
 // ClearButtons removes all buttons from the window.
 func (m *Modal) ClearButtons() {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.ClearButtons()
 }
 
 // SetFocus shifts the focus to the button with the given index.
 func (m *Modal) SetFocus(index int) {
-	m.Lock()
-	defer m.Unlock()
-
 	m.form.SetFocus(index)
 }
 
@@ -212,9 +169,6 @@ func (m *Modal) Draw(screen tcell.Screen) {
 	}
 
 	formItemCount := m.form.GetFormItemCount()
-
-	m.Lock()
-	defer m.Unlock()
 
 	// Calculate the width of this Modal.
 	buttonsWidth := 0

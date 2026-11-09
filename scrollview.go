@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -44,8 +42,6 @@ type ScrollView struct {
 
 	// The number of characters to be skipped on each line (not in wrap mode).
 	heightOffset int
-
-	sync.RWMutex
 }
 
 // NewScrollView returns a new scrollbox layout container with no primitives and its
@@ -70,33 +66,22 @@ func NewScrollView() *ScrollView {
 
 // SetScrollBarVisibility specifies the display of the scroll bar.
 func (f *ScrollView) SetScrollBarVisibility(visibility ScrollBarVisibility) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.scrollBarVisibility = visibility
 }
 
 // SetScrollBarColor sets the color of the scroll bar.
 func (f *ScrollView) SetScrollBarColor(color tcell.Color) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.scrollBarColor = color
 }
 
 // SetFullScreen sets the flag which, when true, causes the scroll layout to use
 // the entire screen space instead of whatever size it is currently assigned to.
 func (f *ScrollView) SetFullScreen(fullScreen bool) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.fullScreen = fullScreen
 }
 
 // GetItems returns a slice of all items in the container.
 func (f *ScrollView) GetItems() []Primitive {
-	f.RLock()
-	defer f.RUnlock()
 	var ret []Primitive
 	for _, item := range f.items {
 		ret = append(ret, item.Item)
@@ -119,9 +104,6 @@ func (f *ScrollView) GetItems() []Primitive {
 //
 // A nil value for the primitive represents empty space.
 func (f *ScrollView) AddItem(item Primitive, fixedSize int, focus bool) {
-	f.Lock()
-	defer f.Unlock()
-
 	if item == nil {
 		item = NewBox()
 		item.SetVisible(false)
@@ -133,8 +115,6 @@ func (f *ScrollView) AddItem(item Primitive, fixedSize int, focus bool) {
 // AddItemAtIndex adds an item to the scroll at a given index.
 // For more information see AddItem.
 func (f *ScrollView) AddItemAtIndex(index int, item Primitive, fixedSize int, focus bool) {
-	f.Lock()
-	defer f.Unlock()
 	newItem := &scrollItem{Item: item, FixedSize: fixedSize, Focus: focus}
 
 	if index == 0 {
@@ -147,9 +127,6 @@ func (f *ScrollView) AddItemAtIndex(index int, item Primitive, fixedSize int, fo
 // RemoveItem removes all items for the given primitive from the container,
 // keeping the order of the remaining items intact.
 func (f *ScrollView) RemoveItem(p Primitive) {
-	f.Lock()
-	defer f.Unlock()
-
 	for index := len(f.items) - 1; index >= 0; index-- {
 		if f.items[index].Item == p {
 			f.items = append(f.items[:index], f.items[index+1:]...)
@@ -161,9 +138,6 @@ func (f *ScrollView) RemoveItem(p Primitive) {
 // are multiple ScrollView items with the same primitive, they will all receive the
 // same size. For details regarding the size parameters, see AddItem().
 func (f *ScrollView) ResizeItem(p Primitive, fixedSize int) {
-	f.Lock()
-	defer f.Unlock()
-
 	for _, item := range f.items {
 		if item.Item == p {
 			item.FixedSize = fixedSize
@@ -178,9 +152,6 @@ func (f *ScrollView) Draw(screen tcell.Screen) {
 	}
 
 	f.Box.Draw(screen)
-
-	f.Lock()
-	defer f.Unlock()
 
 	// Calculate size and position of the items.
 
@@ -262,9 +233,6 @@ func (f *ScrollView) Draw(screen tcell.Screen) {
 
 // ScrollTo scrolls to the specified height and width (both starting with 0).
 func (f *ScrollView) ScrollTo(height, width int) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.heightOffset = height
 	// t.columnOffset = column
 	// t.trackEnd = false
@@ -272,24 +240,16 @@ func (f *ScrollView) ScrollTo(height, width int) {
 
 // Focus is called when this primitive receives focus.
 func (f *ScrollView) Focus(delegate func(p Primitive)) {
-	f.Lock()
-
 	for _, item := range f.items {
 		if item.Item != nil && item.Focus {
-			f.Unlock()
 			delegate(item.Item)
 			return
 		}
 	}
-
-	f.Unlock()
 }
 
 // HasFocus returns whether or not this primitive has focus.
 func (f *ScrollView) HasFocus() bool {
-	f.RLock()
-	defer f.RUnlock()
-
 	for _, item := range f.items {
 		if item.Item != nil && item.Item.GetFocusable().HasFocus() {
 			return true

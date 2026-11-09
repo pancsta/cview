@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -31,8 +29,6 @@ type Button struct {
 
 	// An optional rune which is drawn after the label when the button is focused.
 	cursorRune rune
-
-	sync.RWMutex
 }
 
 // NewButton returns a new input field.
@@ -52,59 +48,38 @@ func NewButton(label string) *Button {
 
 // SetLabel sets the button text.
 func (b *Button) SetLabel(label string) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.label = []byte(label)
 }
 
 // GetLabel returns the button text.
 func (b *Button) GetLabel() string {
-	b.RLock()
-	defer b.RUnlock()
-
 	return string(b.label)
 }
 
 // SetLabelColor sets the color of the button text.
 func (b *Button) SetLabelColor(color tcell.Color) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.labelColor = color
 }
 
 // SetLabelColorFocused sets the color of the button text when the button is
 // in focus.
 func (b *Button) SetLabelColorFocused(color tcell.Color) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.labelColorFocused = color
 }
 
 // SetCursorRune sets the rune to show within the button when it is focused.
 func (b *Button) SetCursorRune(rune rune) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.cursorRune = rune
 }
 
 // SetBackgroundColorFocused sets the background color of the button text when
 // the button is in focus.
 func (b *Button) SetBackgroundColorFocused(color tcell.Color) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.backgroundColorFocused = color
 }
 
 // SetSelectedFunc sets a handler which is called when the button was selected.
 func (b *Button) SetSelectedFunc(handler func()) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.selected = handler
 }
 
@@ -116,9 +91,6 @@ func (b *Button) SetSelectedFunc(handler func()) {
 //   - KeyTab: Move to the next field.
 //   - KeyBacktab: Move to the previous field.
 func (b *Button) SetBlurFunc(handler func(key tcell.Key)) {
-	b.Lock()
-	defer b.Unlock()
-
 	b.blur = handler
 }
 
@@ -127,9 +99,6 @@ func (b *Button) Draw(screen tcell.Screen) {
 	if !b.GetVisible() {
 		return
 	}
-
-	b.Lock()
-	defer b.Unlock()
 
 	// Draw the box.
 	borderColor := b.borderColor
@@ -141,9 +110,7 @@ func (b *Button) Draw(screen tcell.Screen) {
 			b.borderColor = borderColor
 		}()
 	}
-	b.Unlock()
 	b.Box.Draw(screen)
-	b.Lock()
 	b.backgroundColor = backgroundColor
 
 	// Draw label.

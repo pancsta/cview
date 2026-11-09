@@ -249,7 +249,7 @@ func TestTextViewDraw(t *testing.T) {
 					t.Errorf("failed to prepare append TextView: %s", err)
 				}
 
-				tv.Draw(app.screen)
+				tv.Draw(app.getScreen())
 			}
 
 			n, err := tv.Write(randomData)
@@ -259,7 +259,7 @@ func TestTextViewDraw(t *testing.T) {
 				t.Errorf("failed to write: expected to write %d bytes, wrote %d", randomDataSize, n)
 			}
 
-			tv.Draw(app.screen)
+			tv.Draw(app.getScreen())
 		})
 	}
 }
@@ -282,7 +282,7 @@ func BenchmarkTextViewDraw(b *testing.B) {
 					b.Errorf("failed to prepare append TextView: %s", err)
 				}
 
-				tv.Draw(app.screen)
+				tv.Draw(app.getScreen())
 			}
 
 			n, err := tv.Write(randomData)
@@ -292,13 +292,13 @@ func BenchmarkTextViewDraw(b *testing.B) {
 				b.Errorf("failed to write: expected to write %d bytes, wrote %d", randomDataSize, n)
 			}
 
-			tv.Draw(app.screen)
+			tv.Draw(app.getScreen())
 
 			b.ReportAllocs()
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				tv.Draw(app.screen)
+				tv.Draw(app.getScreen())
 			}
 		})
 	}

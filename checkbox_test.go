@@ -52,5 +52,5 @@ func TestCheckBox(t *testing.T) {
 		t.Errorf("failed to initialize Application: %s", err)
 	}
 
-	c.Draw(app.screen)
+	c.Draw(app.getScreen())
 }

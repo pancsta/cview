@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -18,8 +17,6 @@ type ListItem struct {
 	shortcut      rune        // The key to select the list item directly, 0 if there is no shortcut.
 	selected      func()      // The optional function which is called when the item is selected.
 	reference     interface{} // An optional reference object.
-
-	sync.RWMutex
 }
 
 // NewListItem returns a new item for a list.
@@ -31,9 +28,6 @@ func NewListItem(mainText string) *ListItem {
 
 // SetMainBytes sets the main text of the list item.
 func (l *ListItem) SetMainBytes(val []byte) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.mainText = val
 }
 
@@ -44,9 +38,6 @@ func (l *ListItem) SetMainText(val string) {
 
 // GetMainBytes returns the item's main text.
 func (l *ListItem) GetMainBytes() []byte {
-	l.RLock()
-	defer l.RUnlock()
-
 	return l.mainText
 }
 
@@ -57,9 +48,6 @@ func (l *ListItem) GetMainText() string {
 
 // SetSecondaryBytes sets a secondary text to be shown underneath the main text.
 func (l *ListItem) SetSecondaryBytes(val []byte) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.secondaryText = val
 }
 
@@ -70,9 +58,6 @@ func (l *ListItem) SetSecondaryText(val string) {
 
 // GetSecondaryBytes returns the item's secondary text.
 func (l *ListItem) GetSecondaryBytes() []byte {
-	l.RLock()
-	defer l.RUnlock()
-
 	return l.secondaryText
 }
 
@@ -83,41 +68,26 @@ func (l *ListItem) GetSecondaryText() string {
 
 // SetShortcut sets the key to select the ListItem directly, 0 if there is no shortcut.
 func (l *ListItem) SetShortcut(val rune) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.shortcut = val
 }
 
 // GetShortcut returns the ListItem's shortcut.
 func (l *ListItem) GetShortcut() rune {
-	l.RLock()
-	defer l.RUnlock()
-
 	return l.shortcut
 }
 
 // SetSelectedFunc sets a function which is called when the ListItem is selected.
 func (l *ListItem) SetSelectedFunc(handler func()) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selected = handler
 }
 
 // SetReference allows you to store a reference of any type in the item
 func (l *ListItem) SetReference(val interface{}) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.reference = val
 }
 
 // GetReference returns the item's reference object.
 func (l *ListItem) GetReference() interface{} {
-	l.RLock()
-	defer l.RUnlock()
-
 	return l.reference
 }
 
@@ -203,8 +173,6 @@ type List struct {
 
 	// Maximum prefix and suffix width.
 	prefixWidth, suffixWidth int
-
-	sync.RWMutex
 }
 
 // NewList returns a new form.
@@ -234,11 +202,9 @@ func NewList() *List {
 //
 // Calling this function triggers a "changed" event if the selection changes.
 func (l *List) SetCurrentItem(index int) {
-	l.Lock()
 	items := slices.Clone(l.items)
 	changed := l.changed
 	previousItem := l.currentItem
-	l.Unlock()
 
 	if index < 0 {
 		index = len(items) + index
@@ -255,18 +221,13 @@ func (l *List) SetCurrentItem(index int) {
 	l.updateOffset()
 
 	if index != previousItem && index < len(items) && changed != nil {
-		l.Lock()
 		changed(index, items[index])
-		l.Unlock()
 	}
 }
 
 // GetCurrentItem returns the currently selected list item,
 // Returns nil if no item is selected.
 func (l *List) GetCurrentItem() *ListItem {
-	l.RLock()
-	defer l.RUnlock()
-
 	if len(l.items) == 0 || l.currentItem >= len(l.items) {
 		return nil
 	}
@@ -276,15 +237,11 @@ func (l *List) GetCurrentItem() *ListItem {
 // GetCurrentItemIndex returns the index of the currently selected list item,
 // starting at 0 for the first item and its struct.
 func (l *List) GetCurrentItemIndex() int {
-	l.RLock()
-	defer l.RUnlock()
 	return l.currentItem
 }
 
 // GetItems returns all list items.
 func (l *List) GetItems() []*ListItem {
-	l.RLock()
-	defer l.RUnlock()
 	return l.items
 }
 
@@ -297,10 +254,7 @@ func (l *List) GetItems() []*ListItem {
 // The currently selected item is shifted accordingly. If it is the one that is
 // removed, a "changed" event is fired.
 func (l *List) RemoveItem(index int) {
-	l.Lock()
-
 	if len(l.items) == 0 {
-		l.Unlock()
 		return
 	}
 
@@ -320,7 +274,6 @@ func (l *List) RemoveItem(index int) {
 
 	// If there is nothing left, we're done.
 	if len(l.items) == 0 {
-		l.Unlock()
 		return
 	}
 
@@ -333,19 +286,13 @@ func (l *List) RemoveItem(index int) {
 	// Fire "changed" event for removed items.
 	if previousItem == index && index < len(l.items) && l.changed != nil {
 		item := l.items[l.currentItem]
-		l.Unlock()
 		l.changed(l.currentItem, item)
-	} else {
-		l.Unlock()
 	}
 }
 
 // SetOffset sets the number of list items and columns by which the list is
 // scrolled down/to the right.
 func (l *List) SetOffset(items, columns int) {
-	l.Lock()
-	defer l.Unlock()
-
 	if items < 0 {
 		items = 0
 	}
@@ -359,57 +306,36 @@ func (l *List) SetOffset(items, columns int) {
 // GetOffset returns the number of list items and columns by which the list is
 // scrolled down/to the right.
 func (l *List) GetOffset() (int, int) {
-	l.Lock()
-	defer l.Unlock()
-
 	return l.itemOffset, l.columnOffset
 }
 
 // SetMainTextColor sets the color of the items' main text.
 func (l *List) SetMainTextColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.mainTextColor = color
 }
 
 // SetSecondaryTextColor sets the color of the items' secondary text.
 func (l *List) SetSecondaryTextColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.secondaryTextColor = color
 }
 
 // SetShortcutColor sets the color of the items' shortcut.
 func (l *List) SetShortcutColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.shortcutColor = color
 }
 
 // SetSelectedTextColor sets the text color of selected items.
 func (l *List) SetSelectedTextColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedTextColor = color
 }
 
 // SetSelectedTextAttributes sets the style attributes of selected items.
 func (l *List) SetSelectedTextAttributes(attr tcell.AttrMask) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedTextAttributes = attr
 }
 
 // SetSelectedBackgroundColor sets the background color of selected items.
 func (l *List) SetSelectedBackgroundColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedBackgroundColor = color
 }
 
@@ -417,27 +343,18 @@ func (l *List) SetSelectedBackgroundColor(color tcell.Color) {
 // list item is highlighted. If set to true, selected items are only highlighted
 // when the list has focus. If set to false, they are always highlighted.
 func (l *List) SetSelectedFocusOnly(focusOnly bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedFocusOnly = focusOnly
 }
 
 // SetSelectedAlwaysVisible sets a flag which determines whether the currently
 // selected list item must remain visible when scrolling.
 func (l *List) SetSelectedAlwaysVisible(alwaysVisible bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedAlwaysVisible = alwaysVisible
 }
 
 // SetSelectedAlwaysCentered sets a flag which determines whether the currently
 // selected list item must remain centered when scrolling.
 func (l *List) SetSelectedAlwaysCentered(alwaysCentered bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selectedAlwaysCentered = alwaysCentered
 }
 
@@ -446,43 +363,28 @@ func (l *List) SetSelectedAlwaysCentered(alwaysCentered bool) {
 // true, the highlight spans the entire view. If set to false, only the text of
 // the selected item from beginning to end is highlighted.
 func (l *List) SetHighlightFullLine(highlight bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.highlightFullLine = highlight
 }
 
 // ShowSecondaryText determines whether or not to show secondary item texts.
 func (l *List) ShowSecondaryText(show bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.showSecondaryText = show
 	return
 }
 
 // SetScrollBarVisibility specifies the display of the scroll bar.
 func (l *List) SetScrollBarVisibility(visibility ScrollBarVisibility) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.scrollBarVisibility = visibility
 }
 
 // SetScrollBarColor sets the color of the scroll bar.
 func (l *List) SetScrollBarColor(color tcell.Color) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.scrollBarColor = color
 }
 
 // SetHover sets the flag that determines whether hovering over an item will
 // highlight it (without triggering callbacks set with SetSelectedFunc).
 func (l *List) SetHover(hover bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.hover = hover
 }
 
@@ -492,9 +394,6 @@ func (l *List) SetHover(hover bool) {
 // false, the selection won't change when navigating downwards on the last item
 // or navigating upwards on the first item.
 func (l *List) SetWrapAround(wrapAround bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.wrapAround = wrapAround
 }
 
@@ -505,9 +404,6 @@ func (l *List) SetWrapAround(wrapAround bool) {
 // This function is also called when the first item is added or when
 // SetCurrentItem() is called.
 func (l *List) SetChangedFunc(handler func(index int, item *ListItem)) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.changed = handler
 }
 
@@ -515,18 +411,12 @@ func (l *List) SetChangedFunc(handler func(index int, item *ListItem)) {
 // list item by pressing Enter on the current selection. The function receives
 // the item's index in the list of items (starting with 0) and its struct.
 func (l *List) SetSelectedFunc(handler func(int, *ListItem)) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.selected = handler
 }
 
 // SetDoneFunc sets a function which is called when the user presses the Escape
 // key.
 func (l *List) SetDoneFunc(handler func()) {
-	l.Lock()
-	defer l.Unlock()
-
 	l.done = handler
 }
 
@@ -558,8 +448,6 @@ func (l *List) AddItem(item *ListItem) {
 // was previously empty, a "changed" event is fired because the new item becomes
 // selected.
 func (l *List) InsertItem(index int, item *ListItem) {
-	l.Lock()
-
 	// Shift index to range.
 	if index < 0 {
 		index = len(l.items) + index + 1
@@ -585,10 +473,7 @@ func (l *List) InsertItem(index int, item *ListItem) {
 	// Fire a "change" event for the first item in the list.
 	if len(l.items) == 1 && l.changed != nil {
 		item := l.items[0]
-		l.Unlock()
 		l.changed(0, item)
-	} else {
-		l.Unlock()
 	}
 }
 
@@ -603,26 +488,18 @@ func (l *List) GetItem(index int) *ListItem {
 
 // GetItemCount returns the number of items in the list.
 func (l *List) GetItemCount() int {
-	l.RLock()
-	defer l.RUnlock()
-
 	return len(l.items)
 }
 
 // GetItemText returns an item's texts (main and secondary). Panics if the index
 // is out of range.
 func (l *List) GetItemText(index int) (main, secondary string) {
-	l.RLock()
-	defer l.RUnlock()
 	return string(l.items[index].mainText), string(l.items[index].secondaryText)
 }
 
 // SetItemText sets an item's main and secondary text. Panics if the index is
 // out of range.
 func (l *List) SetItemText(index int, main, secondary string) {
-	l.Lock()
-	defer l.Unlock()
-
 	item := l.items[index]
 	item.mainText = []byte(main)
 	item.secondaryText = []byte(secondary)
@@ -631,17 +508,12 @@ func (l *List) SetItemText(index int, main, secondary string) {
 // SetItemEnabled sets whether an item is selectable. Panics if the index is
 // out of range.
 func (l *List) SetItemEnabled(index int, enabled bool) {
-	l.Lock()
-	defer l.Unlock()
-
 	item := l.items[index]
 	item.disabled = !enabled
 }
 
 // SetIndicators is used to set prefix and suffix indicators for selected and unselected items.
 func (l *List) SetIndicators(selectedPrefix, selectedSuffix, unselectedPrefix, unselectedSuffix string) {
-	l.Lock()
-	defer l.Unlock()
 	l.selectedPrefix = []byte(selectedPrefix)
 	l.selectedSuffix = []byte(selectedSuffix)
 	l.unselectedPrefix = []byte(unselectedPrefix)
@@ -667,9 +539,6 @@ func (l *List) SetIndicators(selectedPrefix, selectedSuffix, unselectedPrefix, u
 //
 // Set ignoreCase to true for case-insensitive search.
 func (l *List) FindItems(mainSearch, secondarySearch string, mustContainBoth, ignoreCase bool) (indices []int) {
-	l.RLock()
-	defer l.RUnlock()
-
 	if mainSearch == "" && secondarySearch == "" {
 		return
 	}
@@ -704,9 +573,6 @@ func (l *List) FindItems(mainSearch, secondarySearch string, mustContainBoth, ig
 
 // Clear removes all items from the list.
 func (l *List) Clear() {
-	l.Lock()
-	defer l.Unlock()
-
 	l.items = nil
 	l.currentItem = 0
 	l.itemOffset = 0
@@ -727,25 +593,18 @@ func (l *List) HasFocus() bool {
 		return l.ContextMenu.list.HasFocus()
 	}
 
-	l.RLock()
-	defer l.RUnlock()
 	return l.hasFocus
 }
 
 // Transform modifies the current selection.
 func (l *List) Transform(tr Transformation) {
-	l.Lock()
-
 	previousItem := l.currentItem
 
 	l.transform(tr)
 
 	if l.currentItem != previousItem && l.currentItem < len(l.items) && l.changed != nil {
 		item := l.items[l.currentItem]
-		l.Unlock()
 		l.changed(l.currentItem, item)
-	} else {
-		l.Unlock()
 	}
 }
 
@@ -798,10 +657,7 @@ func (l *List) transform(tr Transformation) {
 		}
 
 		item := l.items[l.currentItem]
-		item.RLock()
 		if !item.disabled && (item.shortcut > 0 || len(item.mainText) > 0 || len(item.secondaryText) > 0) {
-
-			item.RUnlock()
 			break
 		}
 
@@ -810,8 +666,6 @@ func (l *List) transform(tr Transformation) {
 		} else {
 			l.currentItem++
 		}
-
-		item.RUnlock()
 	}
 
 	l.updateOffset()
@@ -894,9 +748,6 @@ func (l *List) Draw(screen tcell.Screen) {
 	l.Box.Draw(screen)
 	hasFocus := l.GetFocusable().HasFocus()
 
-	l.Lock()
-	defer l.Unlock()
-
 	// Determine the dimensions.
 	x, y, width, height := l.GetInnerRect()
 	leftEdge := x
@@ -977,7 +828,6 @@ func (l *List) Draw(screen tcell.Screen) {
 			if len(l.selectedSuffix) > 0 {
 				mainText = append(mainText, l.selectedSuffix...)
 			}
-
 		} else {
 			if len(l.unselectedPrefix) > 0 {
 				mainText = append(l.unselectedPrefix, mainText...)
@@ -1123,21 +973,14 @@ func (l *List) Draw(screen tcell.Screen) {
 // InputHandler returns the handler for this primitive.
 func (l *List) InputHandler() func(event *tcell.EventKey, setFocus func(p Primitive)) {
 	return l.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p Primitive)) {
-		l.Lock()
-
 		if HitShortcut(event, Keys.Cancel) {
 			if l.ContextMenu.open {
-				l.Unlock()
-
 				l.ContextMenu.hide(setFocus)
 				return
 			}
 
 			if l.done != nil {
-				l.Unlock()
 				l.done()
-			} else {
-				l.Unlock()
 			}
 			return
 		} else if HitShortcut(event, Keys.Select, Keys.Select2) {
@@ -1145,21 +988,16 @@ func (l *List) InputHandler() func(event *tcell.EventKey, setFocus func(p Primit
 				item := l.items[l.currentItem]
 				if !item.disabled {
 					if item.selected != nil {
-						l.Unlock()
 						item.selected()
-						l.Lock()
 					}
 					if l.selected != nil {
-						l.Unlock()
 						l.selected(l.currentItem, item)
-						l.Lock()
 					}
 				}
 			}
 		} else if HitShortcut(event, Keys.ShowContextMenu) {
 			defer l.ContextMenu.show(l.currentItem, -1, -1, setFocus)
 		} else if len(l.items) == 0 {
-			l.Unlock()
 			return
 		}
 
@@ -1174,17 +1012,12 @@ func (l *List) InputHandler() func(event *tcell.EventKey, setFocus func(p Primit
 
 						item := l.items[l.currentItem]
 						if item.selected != nil {
-							l.Unlock()
 							item.selected()
-							l.Lock()
 						}
 						if l.selected != nil {
-							l.Unlock()
 							l.selected(l.currentItem, item)
-							l.Lock()
 						}
 
-						l.Unlock()
 						return
 					}
 				}
@@ -1215,10 +1048,7 @@ func (l *List) InputHandler() func(event *tcell.EventKey, setFocus func(p Primit
 
 		if l.currentItem != previousItem && l.currentItem < len(l.items) && l.changed != nil {
 			item := l.items[l.currentItem]
-			l.Unlock()
 			l.changed(l.currentItem, item)
-		} else {
-			l.Unlock()
 		}
 	})
 }
@@ -1266,27 +1096,21 @@ func (l *List) indexAtPoint(x, y int) int {
 // MouseHandler returns the mouse handler for this primitive.
 func (l *List) MouseHandler() func(
 	action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
-
 	return l.WrapMouseHandler(func(
 		action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
-
 		x, y := event.Position()
 		if !l.InRect(x, y) {
 			return false, nil
 		}
 
-		l.Lock()
-
 		// Pass events to context menu.
 		if l.ContextMenuVisible() && l.ContextMenuList().InRect(event.Position()) {
 			defer l.ContextMenuList().MouseHandler()(action, event, setFocus)
 			consumed = true
-			l.Unlock()
 			return
 		}
 
 		if !l.InRect(event.Position()) {
-			l.Unlock()
 			return false, nil
 		}
 
@@ -1296,13 +1120,10 @@ func (l *List) MouseHandler() func(
 			if l.ContextMenuVisible() {
 				defer l.ContextMenu.hide(setFocus)
 				consumed = true
-				l.Unlock()
 				return
 			}
 
-			l.Unlock()
 			setFocus(l)
-			l.Lock()
 
 			index := l.indexAtPoint(event.Position())
 			if index != -1 {
@@ -1310,19 +1131,13 @@ func (l *List) MouseHandler() func(
 				if !item.disabled {
 					l.currentItem = index
 					if item.selected != nil {
-						l.Unlock()
 						item.selected()
-						l.Lock()
 					}
 					if l.selected != nil {
-						l.Unlock()
 						l.selected(index, item)
-						l.Lock()
 					}
 					if index != l.currentItem && l.changed != nil {
-						l.Unlock()
 						l.changed(index, item)
-						l.Lock()
 					}
 				}
 			}
@@ -1331,12 +1146,10 @@ func (l *List) MouseHandler() func(
 			if l.ContextMenu.open {
 				defer l.ContextMenu.hide(setFocus)
 				consumed = true
-				l.Unlock()
 				return
 			}
 		case MouseRightDown:
 			if len(l.ContextMenuList().items) == 0 {
-				l.Unlock()
 				return
 			}
 
@@ -1348,9 +1161,7 @@ func (l *List) MouseHandler() func(
 				if !item.disabled {
 					l.currentItem = index
 					if index != l.currentItem && l.changed != nil {
-						l.Unlock()
 						l.changed(index, item)
-						l.Lock()
 					}
 				}
 			}
@@ -1387,7 +1198,6 @@ func (l *List) MouseHandler() func(
 			consumed = true
 		}
 
-		l.Unlock()
 		return
 	})
 }

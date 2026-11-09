@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -20,8 +18,6 @@ type Window struct {
 
 	dragX, dragY   int
 	dragWX, dragWY int
-
-	sync.RWMutex
 }
 
 // NewWindow returns a new window around the given primitive.
@@ -39,9 +35,6 @@ func NewWindow(primitive Primitive) *Window {
 // SetFullscreen sets the flag indicating whether or not the the window should
 // be drawn fullscreen.
 func (w *Window) SetFullscreen(fullscreen bool) {
-	w.Lock()
-	defer w.Unlock()
-
 	if w.fullscreen == fullscreen {
 		return
 	}
@@ -56,9 +49,6 @@ func (w *Window) SetFullscreen(fullscreen bool) {
 
 // Focus is called when this primitive receives focus.
 func (w *Window) Focus(delegate func(p Primitive)) {
-	w.Lock()
-	defer w.Unlock()
-
 	w.Box.Focus(delegate)
 
 	w.primitive.Focus(delegate)
@@ -66,9 +56,6 @@ func (w *Window) Focus(delegate func(p Primitive)) {
 
 // Blur is called when this primitive loses focus.
 func (w *Window) Blur() {
-	w.Lock()
-	defer w.Unlock()
-
 	w.Box.Blur()
 
 	w.primitive.Blur()
@@ -76,9 +63,6 @@ func (w *Window) Blur() {
 
 // HasFocus returns whether or not this primitive has focus.
 func (w *Window) HasFocus() bool {
-	w.RLock()
-	defer w.RUnlock()
-
 	focusable := w.primitive.GetFocusable()
 	if focusable != nil {
 		return focusable.HasFocus()
@@ -92,9 +76,6 @@ func (w *Window) Draw(screen tcell.Screen) {
 	if !w.GetVisible() {
 		return
 	}
-
-	w.RLock()
-	defer w.RUnlock()
 
 	w.Box.Draw(screen)
 

@@ -44,7 +44,7 @@ func TestTable(t *testing.T) {
 				}
 			}
 
-			table.Draw(app.screen)
+			table.Draw(app.getScreen())
 
 			table.Clear()
 		})
@@ -63,13 +63,13 @@ func BenchmarkTableDraw(b *testing.B) {
 				b.Errorf("failed to initialize Application: %s", err)
 			}
 
-			table.Draw(app.screen)
+			table.Draw(app.getScreen())
 
 			b.ReportAllocs()
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				table.Draw(app.screen)
+				table.Draw(app.getScreen())
 			}
 		})
 	}

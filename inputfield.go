@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math"
 	"regexp"
-	"sync"
 	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
@@ -135,8 +134,6 @@ type InputField struct {
 
 	// The number of bytes of the text string skipped ahead while drawing.
 	offset int
-
-	sync.RWMutex
 }
 
 // NewInputField returns a new input field.
@@ -162,215 +159,139 @@ func NewInputField() *InputField {
 
 // SetText sets the current text of the input field.
 func (i *InputField) SetText(text string) {
-	i.Lock()
-
 	i.text = []byte(text)
 	i.cursorPos = len(text)
 	if i.changed != nil {
-		i.Unlock()
 		i.changed(text)
-	} else {
-		i.Unlock()
 	}
 }
 
 // GetText returns the current text of the input field.
 func (i *InputField) GetText() string {
-	i.RLock()
-	defer i.RUnlock()
-
 	return string(i.text)
 }
 
 // SetLabel sets the text to be displayed before the input area.
 func (i *InputField) SetLabel(label string) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.label = []byte(label)
 }
 
 // GetLabel returns the text to be displayed before the input area.
 func (i *InputField) GetLabel() string {
-	i.RLock()
-	defer i.RUnlock()
-
 	return string(i.label)
 }
 
 // SetLabelWidth sets the screen width of the label. A value of 0 will cause the
 // primitive to use the width of the label string.
 func (i *InputField) SetLabelWidth(width int) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.labelWidth = width
 }
 
 // SetPlaceholder sets the text to be displayed when the input text is empty.
 func (i *InputField) SetPlaceholder(text string) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.placeholder = []byte(text)
 }
 
 // SetLabelColor sets the color of the label.
 func (i *InputField) SetLabelColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.labelColor = color
 }
 
 // SetLabelColorFocused sets the color of the label when focused.
 func (i *InputField) SetLabelColorFocused(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.labelColorFocused = color
 }
 
 // SetFieldBackgroundColor sets the background color of the input area.
 func (i *InputField) SetFieldBackgroundColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldBackgroundColor = color
 }
 
 // SetFieldBackgroundColorFocused sets the background color of the input area
 // when focused.
 func (i *InputField) SetFieldBackgroundColorFocused(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldBackgroundColorFocused = color
 }
 
 // SetFieldTextColor sets the text color of the input area.
 func (i *InputField) SetFieldTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldTextColor = color
 }
 
 // SetFieldTextColorFocused sets the text color of the input area when focused.
 func (i *InputField) SetFieldTextColorFocused(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldTextColorFocused = color
 }
 
 // SetPlaceholderTextColor sets the text color of placeholder text.
 func (i *InputField) SetPlaceholderTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.placeholderTextColor = color
 }
 
 // SetPlaceholderTextColorFocused sets the text color of placeholder text when
 // focused.
 func (i *InputField) SetPlaceholderTextColorFocused(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.placeholderTextColorFocused = color
 }
 
 // SetAutocompleteListTextColor sets the text color of the ListItems.
 func (i *InputField) SetAutocompleteListTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.autocompleteListTextColor = color
 }
 
 // SetAutocompleteListBackgroundColor sets the background color of the
 // autocomplete list.
 func (i *InputField) SetAutocompleteListBackgroundColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.autocompleteListBackgroundColor = color
 }
 
 // SetAutocompleteListSelectedTextColor sets the text color of the selected
 // ListItem.
 func (i *InputField) SetAutocompleteListSelectedTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.autocompleteListSelectedTextColor = color
 }
 
 // SetAutocompleteListSelectedBackgroundColor sets the background of the
 // selected ListItem.
 func (i *InputField) SetAutocompleteListSelectedBackgroundColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.autocompleteListSelectedBackgroundColor = color
 }
 
 // SetAutocompleteSuggestionTextColor sets the text color of the autocomplete
 // suggestion in the input field.
 func (i *InputField) SetAutocompleteSuggestionTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.autocompleteSuggestionTextColor = color
 }
 
 // SetFieldNoteTextColor sets the text color of the note.
 func (i *InputField) SetFieldNoteTextColor(color tcell.Color) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldNoteTextColor = color
 }
 
 // SetFieldNote sets the text to show below the input field, e.g. when the
 // input is invalid.
 func (i *InputField) SetFieldNote(note string) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldNote = []byte(note)
 }
 
 // ResetFieldNote sets the note to an empty string.
 func (i *InputField) ResetFieldNote() {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldNote = nil
 }
 
 // SetFieldWidth sets the screen width of the input area. A value of 0 means
 // extend as much as possible.
 func (i *InputField) SetFieldWidth(width int) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.fieldWidth = width
 }
 
 // GetFieldWidth returns this primitive's field width.
 func (i *InputField) GetFieldWidth() int {
-	i.RLock()
-	defer i.RUnlock()
-
 	return i.fieldWidth
 }
 
 // GetFieldHeight returns the height of the field.
 func (i *InputField) GetFieldHeight() int {
-	i.RLock()
-	defer i.RUnlock()
 	if len(i.fieldNote) == 0 {
 		return 1
 	}
@@ -379,26 +300,17 @@ func (i *InputField) GetFieldHeight() int {
 
 // GetCursorPosition returns the cursor position.
 func (i *InputField) GetCursorPosition() int {
-	i.RLock()
-	defer i.RUnlock()
-
 	return i.cursorPos
 }
 
 // SetCursorPosition sets the cursor position.
 func (i *InputField) SetCursorPosition(cursorPos int) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.cursorPos = cursorPos
 }
 
 // SetMaskCharacter sets a character that masks user input on a screen. A value
 // of 0 disables masking.
 func (i *InputField) SetMaskCharacter(mask rune) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.maskCharacter = mask
 }
 
@@ -409,9 +321,7 @@ func (i *InputField) SetMaskCharacter(mask rune) {
 // Autocomplete() is called. Entries are cleared when the user selects an entry
 // or presses Escape.
 func (i *InputField) SetAutocompleteFunc(callback func(currentText string) (entries []*ListItem)) {
-	i.Lock()
 	i.autocomplete = callback
-	i.Unlock()
 
 	i.Autocomplete()
 }
@@ -425,25 +335,18 @@ func (i *InputField) SetAutocompleteFunc(callback func(currentText string) (entr
 // field is not redrawn automatically unless called from the main goroutine
 // (e.g. in response to events).
 func (i *InputField) Autocomplete() {
-	i.Lock()
 	if i.autocomplete == nil {
-		i.Unlock()
 		return
 	}
-	i.Unlock()
 
 	// Do we have any autocomplete entries?
 	entries := i.autocomplete(string(i.text))
 	if len(entries) == 0 {
 		// No entries, no list.
-		i.Lock()
 		i.autocompleteList = nil
 		i.autocompleteListSuggestion = nil
-		i.Unlock()
 		return
 	}
-
-	i.Lock()
 
 	// Make a list if we have none.
 	if i.autocompleteList == nil {
@@ -473,8 +376,6 @@ func (i *InputField) Autocomplete() {
 	if currentEntry >= 0 {
 		i.autocompleteList.SetCurrentItem(currentEntry)
 	}
-
-	i.Unlock()
 }
 
 // autocompleteChanged gets called when another item in the
@@ -497,18 +398,12 @@ func (i *InputField) autocompleteChanged(_ int, item *ListItem) {
 // This package defines a number of variables prefixed with InputField which may
 // be used for common input (e.g. numbers, maximum text length).
 func (i *InputField) SetAcceptanceFunc(handler func(textToCheck string, lastChar rune) bool) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.accept = handler
 }
 
 // SetChangedFunc sets a handler which is called whenever the text of the input
 // field has changed. It receives the current text (after the change).
 func (i *InputField) SetChangedFunc(handler func(text string)) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.changed = handler
 }
 
@@ -521,17 +416,11 @@ func (i *InputField) SetChangedFunc(handler func(text string)) {
 //   - KeyTab: Move to the next field.
 //   - KeyBacktab: Move to the previous field.
 func (i *InputField) SetDoneFunc(handler func(key tcell.Key)) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.done = handler
 }
 
 // SetFinishedFunc sets a callback invoked when the user leaves this form item.
 func (i *InputField) SetFinishedFunc(handler func(key tcell.Key)) {
-	i.Lock()
-	defer i.Unlock()
-
 	i.finished = handler
 }
 
@@ -542,9 +431,6 @@ func (i *InputField) Draw(screen tcell.Screen) {
 	}
 
 	i.Box.Draw(screen)
-
-	i.Lock()
-	defer i.Unlock()
 
 	// Select colors
 	labelColor := i.labelColor
@@ -710,14 +596,10 @@ func (i *InputField) Draw(screen tcell.Screen) {
 // InputHandler returns the handler for this primitive.
 func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p Primitive)) {
 	return i.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p Primitive)) {
-		i.Lock()
-
 		// Trigger changed events.
 		currentText := i.text
 		defer func() {
-			i.Lock()
 			newText := i.text
-			i.Unlock()
 
 			if !bytes.Equal(newText, currentText) {
 				i.Autocomplete()
@@ -787,14 +669,12 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 					moveWordRight()
 				default:
 					if !add(event.Rune()) {
-						i.Unlock()
 						return
 					}
 				}
 			} else {
 				// Other keys are simply accepted as regular characters.
 				if !add(event.Rune()) {
-					i.Unlock()
 					return
 				}
 			}
@@ -844,14 +724,10 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 				if currentItem.GetSecondaryText() != "" {
 					selectionText = currentItem.GetSecondaryText()
 				}
-				i.Unlock()
 				i.SetText(selectionText)
-				i.Lock()
 				i.autocompleteList = nil
 				i.autocompleteListSuggestion = nil
-				i.Unlock()
 			} else {
-				i.Unlock()
 				finish(key)
 			}
 			return
@@ -859,9 +735,7 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 			if i.autocompleteList != nil {
 				i.autocompleteList = nil
 				i.autocompleteListSuggestion = nil
-				i.Unlock()
 			} else {
-				i.Unlock()
 				finish(key)
 			}
 			return
@@ -873,9 +747,7 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 					newEntry = 0
 				}
 				i.autocompleteList.SetCurrentItem(newEntry)
-				i.Unlock()
 			} else {
-				i.Unlock()
 				finish(key)
 			}
 			return
@@ -886,15 +758,11 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 					newEntry = i.autocompleteList.GetItemCount() - 1
 				}
 				i.autocompleteList.SetCurrentItem(newEntry)
-				i.Unlock()
 			} else {
-				i.Unlock()
 				finish(key)
 			}
 			return
 		}
-
-		i.Unlock()
 	})
 }
 

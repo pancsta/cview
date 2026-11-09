@@ -1,8 +1,6 @@
 package cview
 
 import (
-	"sync"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -11,8 +9,6 @@ type WindowManager struct {
 	*Box
 
 	windows []*Window
-
-	sync.RWMutex
 }
 
 // NewWindowManager returns a new window manager.
@@ -24,9 +20,6 @@ func NewWindowManager() *WindowManager {
 
 // Add adds a window to the manager.
 func (wm *WindowManager) Add(w ...*Window) {
-	wm.Lock()
-	defer wm.Unlock()
-
 	for _, window := range w {
 		window.SetBorder(true)
 	}
@@ -36,17 +29,11 @@ func (wm *WindowManager) Add(w ...*Window) {
 
 // Clear removes all windows from the manager.
 func (wm *WindowManager) Clear() {
-	wm.Lock()
-	defer wm.Unlock()
-
 	wm.windows = nil
 }
 
 // Focus is called when this primitive receives focus.
 func (wm *WindowManager) Focus(delegate func(p Primitive)) {
-	wm.Lock()
-	defer wm.Unlock()
-
 	if len(wm.windows) == 0 {
 		return
 	}
@@ -56,9 +43,6 @@ func (wm *WindowManager) Focus(delegate func(p Primitive)) {
 
 // HasFocus returns whether or not this primitive has focus.
 func (wm *WindowManager) HasFocus() bool {
-	wm.RLock()
-	defer wm.RUnlock()
-
 	for _, w := range wm.windows {
 		if w.HasFocus() {
 			return true
@@ -73,9 +57,6 @@ func (wm *WindowManager) Draw(screen tcell.Screen) {
 	if !wm.GetVisible() {
 		return
 	}
-
-	wm.RLock()
-	defer wm.RUnlock()
 
 	wm.Box.Draw(screen)
 

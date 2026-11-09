@@ -2,7 +2,6 @@ package cview
 
 import (
 	"errors"
-	"sync"
 )
 
 // Focusable provides a method which determines if a primitive has focus.
@@ -25,8 +24,6 @@ type FocusManager struct {
 	wrapAround bool
 
 	setFocus func(p Primitive)
-
-	sync.RWMutex
 }
 
 // NewFocusManager returns a new FocusManager object.
@@ -40,17 +37,11 @@ func NewFocusManager(setFocus func(p Primitive)) *FocusManager {
 // false, the focus won't change when navigating forwards on the last element
 // or navigating backwards on the first element.
 func (f *FocusManager) SetWrapAround(wrapAround bool) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.wrapAround = wrapAround
 }
 
 // Add adds an element to the focus handler.
 func (f *FocusManager) Add(p ...Primitive) {
-	f.Lock()
-	defer f.Unlock()
-
 	for _, primitive := range p {
 		f.elements = append(f.elements, &focusElement{primitive: primitive})
 	}
@@ -58,9 +49,6 @@ func (f *FocusManager) Add(p ...Primitive) {
 
 // AddAt adds an element to the focus handler at the specified index.
 func (f *FocusManager) AddAt(index int, p Primitive) {
-	f.Lock()
-	defer f.Unlock()
-
 	if index < 0 || index > len(f.elements) {
 		panic("index out of range")
 	}
@@ -77,9 +65,6 @@ func (f *FocusManager) AddAt(index int, p Primitive) {
 
 // Focus focuses the provided element.
 func (f *FocusManager) Focus(p Primitive) {
-	f.Lock()
-	defer f.Unlock()
-
 	if len(f.elements) == 0 {
 		return
 	}
@@ -95,9 +80,6 @@ func (f *FocusManager) Focus(p Primitive) {
 
 // FocusPrevious focuses the previous element.
 func (f *FocusManager) FocusPrevious() {
-	f.Lock()
-	defer f.Unlock()
-
 	f.focused--
 	f.updateFocusIndex(true)
 	f.setFocus(f.elements[f.focused].primitive)
@@ -105,9 +87,6 @@ func (f *FocusManager) FocusPrevious() {
 
 // FocusNext focuses the next element.
 func (f *FocusManager) FocusNext() {
-	f.Lock()
-	defer f.Unlock()
-
 	f.focused++
 	f.updateFocusIndex(false)
 	f.setFocus(f.elements[f.focused].primitive)
@@ -115,18 +94,12 @@ func (f *FocusManager) FocusNext() {
 
 // FocusAt focuses the element at the provided index.
 func (f *FocusManager) FocusAt(index int) {
-	f.Lock()
-	defer f.Unlock()
-
 	f.focused = index
 	f.setFocus(f.elements[f.focused].primitive)
 }
 
 // GetFocusIndex returns the index of the currently focused element.
 func (f *FocusManager) GetFocusIndex() int {
-	f.Lock()
-	defer f.Unlock()
-
 	return f.focused
 }
 
@@ -145,9 +118,6 @@ func (f *FocusManager) SetFocusIndex(idx int) error {
 
 // GetFocusedPrimitive returns the currently focused primitive.
 func (f *FocusManager) GetFocusedPrimitive() Primitive {
-	f.Lock()
-	defer f.Unlock()
-
 	return f.elements[f.focused].primitive
 }
 
@@ -200,17 +170,11 @@ func (f *FocusManager) Transform(tr Transformation) {
 
 // Reset resets the focus manager.
 func (f *FocusManager) Reset() {
-	f.Lock()
-	defer f.Unlock()
-
 	f.focused = 0
 	f.elements = nil
 }
 
 // Len returns the length of added primitives.
 func (f *FocusManager) Len() int {
-	f.Lock()
-	defer f.Unlock()
-
 	return len(f.elements)
 }

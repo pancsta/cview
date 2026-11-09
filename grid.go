@@ -2,7 +2,6 @@ package cview
 
 import (
 	"math"
-	"sync"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -55,8 +54,6 @@ type Grid struct {
 
 	// The color of the borders around grid items.
 	bordersColor tcell.Color
-
-	sync.RWMutex
 }
 
 // NewGrid returns a new grid-based layout container with no initial primitives.
@@ -106,9 +103,6 @@ func NewGrid() *Grid {
 // The resulting widths would be: 30, 15, 15, 15, 20, 15, and 15 cells, a total
 // of 125 cells, 25 cells wider than the available grid width.
 func (g *Grid) SetColumns(columns ...int) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.columns = columns
 }
 
@@ -119,18 +113,12 @@ func (g *Grid) SetColumns(columns ...int) {
 // The provided values correspond to row heights, the first value defining
 // the height of the topmost row.
 func (g *Grid) SetRows(rows ...int) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.rows = rows
 }
 
 // SetSize is a shortcut for SetRows() and SetColumns() where all row and column
 // values are set to the given size values. See SetColumns() for details on sizes.
 func (g *Grid) SetSize(numRows, numColumns, rowSize, columnSize int) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.rows = make([]int, numRows)
 	for index := range g.rows {
 		g.rows[index] = rowSize
@@ -144,9 +132,6 @@ func (g *Grid) SetSize(numRows, numColumns, rowSize, columnSize int) {
 // SetMinSize sets an absolute minimum width for rows and an absolute minimum
 // height for columns. Panics if negative values are provided.
 func (g *Grid) SetMinSize(row, column int) {
-	g.Lock()
-	defer g.Unlock()
-
 	if row < 0 || column < 0 {
 		panic("Invalid minimum row/column size")
 	}
@@ -157,9 +142,6 @@ func (g *Grid) SetMinSize(row, column int) {
 // If borders are drawn (see SetBorders()), these values are ignored and a gap
 // of 1 is assumed. Panics if negative values are provided.
 func (g *Grid) SetGap(row, column int) {
-	g.Lock()
-	defer g.Unlock()
-
 	if row < 0 || column < 0 {
 		panic("Invalid gap size")
 	}
@@ -170,17 +152,11 @@ func (g *Grid) SetGap(row, column int) {
 // this value to true will cause the gap values (see SetGap()) to be ignored and
 // automatically assumed to be 1 where the border graphics are drawn.
 func (g *Grid) SetBorders(borders bool) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.borders = borders
 }
 
 // SetBordersColor sets the color of the item borders.
 func (g *Grid) SetBordersColor(color tcell.Color) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.bordersColor = color
 }
 
@@ -211,9 +187,6 @@ func (g *Grid) SetBordersColor(color tcell.Color) {
 // receives focus. If there are multiple items with a true focus flag, the last
 // visible one that was added will receive focus.
 func (g *Grid) AddItem(p Primitive, row, column, rowSpan, colSpan, minGridHeight, minGridWidth int, focus bool) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.items = append(g.items, &gridItem{
 		Item:          p,
 		Row:           row,
@@ -237,9 +210,6 @@ func (g *Grid) HasItem(p Primitive) bool {
 }
 
 func (g *Grid) UpdateItem(p Primitive, row, column, rowSpan, colSpan, minGridHeight, minGridWidth int, focus bool) {
-	g.Lock()
-	defer g.Unlock()
-
 	for _, item := range g.items {
 		if item.Item != p {
 			continue
@@ -259,9 +229,6 @@ func (g *Grid) UpdateItem(p Primitive, row, column, rowSpan, colSpan, minGridHei
 // RemoveItem removes all items for the given primitive from the grid, keeping
 // the order of the remaining items intact.
 func (g *Grid) RemoveItem(p Primitive) {
-	g.Lock()
-	defer g.Unlock()
-
 	for index := len(g.items) - 1; index >= 0; index-- {
 		if g.items[index].Item == p {
 			g.items = append(g.items[:index], g.items[index+1:]...)
@@ -271,9 +238,6 @@ func (g *Grid) RemoveItem(p Primitive) {
 
 // Clear removes all items from the grid.
 func (g *Grid) Clear() {
-	g.Lock()
-	defer g.Unlock()
-
 	g.items = nil
 }
 
@@ -283,26 +247,18 @@ func (g *Grid) Clear() {
 // the grid is drawn. The actual position of the grid may also be adjusted such
 // that contained primitives that have focus remain visible.
 func (g *Grid) SetOffset(rows, columns int) {
-	g.Lock()
-	defer g.Unlock()
-
 	g.rowOffset, g.columnOffset = rows, columns
 }
 
 // GetOffset returns the current row and column offset (see SetOffset() for
 // details).
 func (g *Grid) GetOffset() (rows, columns int) {
-	g.RLock()
-	defer g.RUnlock()
-
 	return g.rowOffset, g.columnOffset
 }
 
 // Focus is called when this primitive receives focus.
 func (g *Grid) Focus(delegate func(p Primitive)) {
-	g.Lock()
 	items := g.items
-	g.Unlock()
 
 	for _, item := range items {
 		if item.Focus {
@@ -311,24 +267,16 @@ func (g *Grid) Focus(delegate func(p Primitive)) {
 		}
 	}
 
-	g.Lock()
 	g.hasFocus = true
-	g.Unlock()
 }
 
 // Blur is called when this primitive loses focus.
 func (g *Grid) Blur() {
-	g.Lock()
-	defer g.Unlock()
-
 	g.hasFocus = false
 }
 
 // HasFocus returns whether or not this primitive has focus.
 func (g *Grid) HasFocus() bool {
-	g.RLock()
-	defer g.RUnlock()
-
 	for _, item := range g.items {
 		if item.visible && item.Item.GetFocusable().HasFocus() {
 			return true
@@ -340,9 +288,6 @@ func (g *Grid) HasFocus() bool {
 // InputHandler returns the handler for this primitive.
 func (g *Grid) InputHandler() func(event *tcell.EventKey, setFocus func(p Primitive)) {
 	return g.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p Primitive)) {
-		g.Lock()
-		defer g.Unlock()
-
 		if HitShortcut(event, Keys.MoveFirst, Keys.MoveFirst2) {
 			g.rowOffset, g.columnOffset = 0, 0
 		} else if HitShortcut(event, Keys.MoveLast, Keys.MoveLast2) {
@@ -366,9 +311,6 @@ func (g *Grid) Draw(screen tcell.Screen) {
 	}
 
 	g.Box.Draw(screen)
-
-	g.Lock()
-	defer g.Unlock()
 
 	x, y, width, height := g.GetInnerRect()
 	screenWidth, screenHeight := screen.Size()

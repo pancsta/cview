@@ -38,5 +38,5 @@ func TestButton(t *testing.T) {
 		t.Errorf("failed to initialize Application: %s", err)
 	}
 
-	b.Draw(app.screen)
+	b.Draw(app.getScreen())
 }

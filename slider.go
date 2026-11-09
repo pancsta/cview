@@ -2,7 +2,6 @@ package cview
 
 import (
 	"math"
-	"sync"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -54,8 +53,6 @@ type Slider struct {
 	// A callback function set by the Form class and called when the user leaves
 	// this form item.
 	finished func(tcell.Key)
-
-	sync.RWMutex
 }
 
 // NewSlider returns a new slider.
@@ -75,74 +72,47 @@ func NewSlider() *Slider {
 
 // SetLabel sets the text to be displayed before the input area.
 func (s *Slider) SetLabel(label string) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.label = []byte(label)
 }
 
 // GetLabel returns the text to be displayed before the input area.
 func (s *Slider) GetLabel() string {
-	s.RLock()
-	defer s.RUnlock()
-
 	return string(s.label)
 }
 
 // SetLabelWidth sets the screen width of the label. A value of 0 will cause the
 // primitive to use the width of the label string.
 func (s *Slider) SetLabelWidth(width int) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.labelWidth = width
 }
 
 // SetLabelColor sets the color of the label.
 func (s *Slider) SetLabelColor(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.labelColor = color
 }
 
 // SetLabelColorFocused sets the color of the label when focused.
 func (s *Slider) SetLabelColorFocused(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.labelColorFocused = color
 }
 
 // SetFieldBackgroundColor sets the background color of the input area.
 func (s *Slider) SetFieldBackgroundColor(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.fieldBackgroundColor = color
 }
 
 // SetFieldBackgroundColorFocused sets the background color of the input area when focused.
 func (s *Slider) SetFieldBackgroundColorFocused(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.fieldBackgroundColorFocused = color
 }
 
 // SetFieldTextColor sets the text color of the input area.
 func (s *Slider) SetFieldTextColor(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.fieldTextColor = color
 }
 
 // SetFieldTextColorFocused sets the text color of the input area when focused.
 func (s *Slider) SetFieldTextColorFocused(color tcell.Color) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.fieldTextColorFocused = color
 }
 
@@ -159,18 +129,12 @@ func (s *Slider) GetFieldWidth() int {
 // SetIncrement sets the amount the slider is incremented by when modified via
 // keyboard.
 func (s *Slider) SetIncrement(increment int) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.increment = increment
 }
 
 // SetChangedFunc sets a handler which is called when the value of this slider
 // was changed by the user. The handler function receives the new value.
 func (s *Slider) SetChangedFunc(handler func(value int)) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.changed = handler
 }
 
@@ -182,17 +146,11 @@ func (s *Slider) SetChangedFunc(handler func(value int)) {
 //   - KeyTab: Move to the next field.
 //   - KeyBacktab: Move to the previous field.
 func (s *Slider) SetDoneFunc(handler func(key tcell.Key)) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.done = handler
 }
 
 // SetFinishedFunc sets a callback invoked when the user leaves this form item.
 func (s *Slider) SetFinishedFunc(handler func(key tcell.Key)) {
-	s.Lock()
-	defer s.Unlock()
-
 	s.finished = handler
 }
 
@@ -204,8 +162,6 @@ func (s *Slider) Draw(screen tcell.Screen) {
 
 	s.Box.Draw(screen)
 	hasFocus := s.GetFocusable().HasFocus()
-
-	s.Lock()
 
 	// Select colors
 	labelColor := s.labelColor
@@ -227,7 +183,6 @@ func (s *Slider) Draw(screen tcell.Screen) {
 	x, y, width, height := s.GetInnerRect()
 	rightLimit := x + width
 	if height < 1 || rightLimit <= x {
-		s.Unlock()
 		return
 	}
 
@@ -255,7 +210,6 @@ func (s *Slider) Draw(screen tcell.Screen) {
 	}
 
 	// Draw slider.
-	s.Unlock()
 	s.ProgressBar.SetRect(x, y, width, height)
 	s.ProgressBar.SetEmptyColor(fieldBackgroundColor)
 	s.ProgressBar.SetFilledColor(fieldTextColor)

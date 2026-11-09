@@ -3,7 +3,6 @@ package cview
 import (
 	"bytes"
 	"fmt"
-	"sync"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -29,8 +28,6 @@ type TabbedPanels struct {
 	width, lastWidth int
 
 	setFocus func(Primitive)
-
-	sync.RWMutex
 }
 
 // NewTabbedPanels returns a new TabbedPanels object.
@@ -78,9 +75,7 @@ func (t *TabbedPanels) SetChangedFunc(handler func()) {
 // AddTab adds a new tab. Tab names should consist only of letters, numbers
 // and spaces.
 func (t *TabbedPanels) AddTab(name, label string, item Primitive) {
-	t.Lock()
 	t.tabLabels[name] = label
-	t.Unlock()
 
 	t.panels.AddPanel(name, item, true, false)
 
@@ -96,9 +91,6 @@ func (t *TabbedPanels) RemoveTab(name string) {
 
 // HasTab returns true if a tab with the given name exists in this object.
 func (t *TabbedPanels) HasTab(name string) bool {
-	t.RLock()
-	defer t.RUnlock()
-
 	for _, panel := range t.panels.panels {
 		if panel.Name == name {
 			return true
@@ -109,18 +101,13 @@ func (t *TabbedPanels) HasTab(name string) bool {
 
 // SetCurrentTab sets the currently visible tab.
 func (t *TabbedPanels) SetCurrentTab(name string) {
-	t.Lock()
-
 	if t.currentTab == name {
-		t.Unlock()
 		return
 	}
 
 	t.currentTab = name
 
 	t.updateAll()
-
-	t.Unlock()
 
 	h := t.Switcher.GetHighlights()
 	var found bool
@@ -138,16 +125,11 @@ func (t *TabbedPanels) SetCurrentTab(name string) {
 
 // GetCurrentTab returns the currently visible tab.
 func (t *TabbedPanels) GetCurrentTab() string {
-	t.RLock()
-	defer t.RUnlock()
 	return t.currentTab
 }
 
 // SetTabLabel sets the label of a tab.
 func (t *TabbedPanels) SetTabLabel(name, label string) {
-	t.Lock()
-	defer t.Unlock()
-
 	if t.tabLabels[name] == label {
 		return
 	}
@@ -179,8 +161,6 @@ func (t *TabbedPanels) SetTabBackgroundColorFocused(color tcell.Color) {
 
 // SetTabSwitcherDivider sets the tab switcher divider text. Color tags are supported.
 func (t *TabbedPanels) SetTabSwitcherDivider(start, mid, end string) {
-	t.Lock()
-	defer t.Unlock()
 	t.dividerStart, t.dividerMid, t.dividerEnd = start, mid, end
 }
 
@@ -188,18 +168,12 @@ func (t *TabbedPanels) SetTabSwitcherDivider(start, mid, end string) {
 // when rendering horizontally. A value of 0 (the default) indicates the height
 // should automatically adjust to fit all of the tab labels.
 func (t *TabbedPanels) SetTabSwitcherHeight(height int) {
-	t.Lock()
-	defer t.Unlock()
-
 	t.switcherHeight = height
 	t.rebuild()
 }
 
 // SetTabSwitcherVertical sets the orientation of the tab switcher.
 func (t *TabbedPanels) SetTabSwitcherVertical(vertical bool) {
-	t.Lock()
-	defer t.Unlock()
-
 	if t.switcherVertical == vertical {
 		return
 	}
@@ -210,9 +184,6 @@ func (t *TabbedPanels) SetTabSwitcherVertical(vertical bool) {
 
 // SetTabSwitcherAfterContent sets whether the tab switcher is positioned after content.
 func (t *TabbedPanels) SetTabSwitcherAfterContent(after bool) {
-	t.Lock()
-	defer t.Unlock()
-
 	if t.switcherAfterContent == after {
 		return
 	}

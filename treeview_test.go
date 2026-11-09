@@ -38,7 +38,7 @@ func TestTreeView(t *testing.T) {
 	// Add root node
 
 	tr.SetRoot(rootNode)
-	tr.Draw(app.screen)
+	tr.Draw(app.getScreen())
 	if tr.GetRoot() != rootNode {
 		t.Errorf("failed to initialize TreeView: expected root node A, got %v", tr.GetRoot())
 	} else if tr.GetRowCount() != 1 {
@@ -62,7 +62,7 @@ func TestTreeView(t *testing.T) {
 	// Add child node
 
 	rootNode.AddChild(childNode)
-	tr.Draw(app.screen)
+	tr.Draw(app.getScreen())
 	if tr.GetRoot() != rootNode {
 		t.Errorf("failed to initialize TreeView: expected root node A, got %v", tr.GetRoot())
 	} else if tr.GetRowCount() != 2 {

@@ -2,7 +2,6 @@ package cview
 
 import (
 	"math"
-	"sync"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -32,8 +31,6 @@ type ProgressBar struct {
 
 	// Progress required to fill the bar.
 	max int
-
-	sync.RWMutex
 }
 
 // NewProgressBar returns a new progress bar.
@@ -52,49 +49,31 @@ func NewProgressBar() *ProgressBar {
 
 // SetEmptyRune sets the rune used for the empty area of the progress bar.
 func (p *ProgressBar) SetEmptyRune(empty rune) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.emptyRune = empty
 }
 
 // SetEmptyColor sets the color of the empty area of the progress bar.
 func (p *ProgressBar) SetEmptyColor(empty tcell.Color) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.emptyColor = empty
 }
 
 // SetFilledRune sets the rune used for the filled area of the progress bar.
 func (p *ProgressBar) SetFilledRune(filled rune) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.filledRune = filled
 }
 
 // SetFilledColor sets the color of the filled area of the progress bar.
 func (p *ProgressBar) SetFilledColor(filled tcell.Color) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.filledColor = filled
 }
 
 // SetVertical sets the direction of the progress bar.
 func (p *ProgressBar) SetVertical(vertical bool) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.vertical = vertical
 }
 
 // SetMax sets the progress required to fill the bar.
 func (p *ProgressBar) SetMax(max int) {
-	p.Lock()
-	defer p.Unlock()
-
 	// TODO progress bar needs at least 1 step, or the drawing will hang
 	if max < 1 {
 		max = 1
@@ -104,17 +83,11 @@ func (p *ProgressBar) SetMax(max int) {
 
 // GetMax returns the progress required to fill the bar.
 func (p *ProgressBar) GetMax() int {
-	p.RLock()
-	defer p.RUnlock()
-
 	return p.max
 }
 
 // AddProgress adds to the current progress.
 func (p *ProgressBar) AddProgress(progress int) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.progress += progress
 	if p.progress < 0 {
 		p.progress = 0
@@ -125,9 +98,6 @@ func (p *ProgressBar) AddProgress(progress int) {
 
 // SetProgress sets the current progress.
 func (p *ProgressBar) SetProgress(progress int) {
-	p.Lock()
-	defer p.Unlock()
-
 	p.progress = progress
 	if p.progress < 0 {
 		p.progress = 0
@@ -138,17 +108,11 @@ func (p *ProgressBar) SetProgress(progress int) {
 
 // GetProgress gets the current progress.
 func (p *ProgressBar) GetProgress() int {
-	p.RLock()
-	defer p.RUnlock()
-
 	return p.progress
 }
 
 // Complete returns whether the progress bar has been filled.
 func (p *ProgressBar) Complete() bool {
-	p.RLock()
-	defer p.RUnlock()
-
 	return p.progress >= p.max
 }
 
@@ -159,9 +123,6 @@ func (p *ProgressBar) Draw(screen tcell.Screen) {
 	}
 
 	p.Box.Draw(screen)
-
-	p.Lock()
-	defer p.Unlock()
 
 	x, y, width, height := p.GetInnerRect()
 
